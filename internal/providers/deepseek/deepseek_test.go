@@ -1,6 +1,13 @@
 package deepseek
 
-import "testing"
+import (
+	"bytes"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/star-plan/aiquokka/internal/usage"
+)
 
 func TestReportFromResponseSingleCurrency(t *testing.T) {
 	resp := &balanceResponse{
@@ -18,27 +25,32 @@ func TestReportFromResponseSingleCurrency(t *testing.T) {
 	if report.Provider != "DeepSeek" {
 		t.Fatalf("Provider = %q, want DeepSeek", report.Provider)
 	}
-	if len(report.Windows) != 1 {
-		t.Fatalf("Windows = %d, want 1", len(report.Windows))
+	if len(report.Windows) != 0 {
+		t.Fatalf("Windows = %d, want 0", len(report.Windows))
 	}
-	w := report.Windows[0]
-	if w.Label != "Balance" {
-		t.Fatalf("Label = %q, want Balance", w.Label)
+	if len(report.Extra) != 3 {
+		t.Fatalf("Extra = %d, want 3", len(report.Extra))
 	}
-	if w.Remaining == nil || *w.Remaining != 110.0 {
-		t.Fatalf("Remaining = %v, want 110.0", w.Remaining)
+	if report.Extra[0].Label != "Balance" || report.Extra[0].Value != "¥110.00" {
+		t.Fatalf("Extra[0] = %+v, want Balance ¥110.00", report.Extra[0])
 	}
-	if w.Currency != "CNY" {
-		t.Fatalf("Currency = %q, want CNY", w.Currency)
+	if report.Extra[1].Label != "Granted" || report.Extra[1].Value != "¥10.00" {
+		t.Fatalf("Extra[1] = %+v, want Granted ¥10.00", report.Extra[1])
 	}
-	if len(report.Extra) != 2 {
-		t.Fatalf("Extra = %d, want 2", len(report.Extra))
+	if report.Extra[2].Label != "Topped up" || report.Extra[2].Value != "¥100.00" {
+		t.Fatalf("Extra[2] = %+v, want Topped up ¥100.00", report.Extra[2])
 	}
-	if report.Extra[0].Label != "Granted" || report.Extra[0].Value != "¥10.00" {
-		t.Fatalf("Extra[0] = %+v, want Granted ¥10.00", report.Extra[0])
+
+	var out bytes.Buffer
+	usage.Render(&out, report, time.Time{})
+	got := out.String()
+	for _, want := range []string{"Balance:       ¥110.00", "Granted:       ¥10.00", "Topped up:     ¥100.00"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("rendered output missing %q:\n%s", want, got)
+		}
 	}
-	if report.Extra[1].Label != "Topped up" || report.Extra[1].Value != "¥100.00" {
-		t.Fatalf("Extra[1] = %+v, want Topped up ¥100.00", report.Extra[1])
+	if strings.Contains(got, "[") || strings.Contains(got, "█") {
+		t.Errorf("rendered balance must not contain a progress bar:\n%s", got)
 	}
 }
 
@@ -63,11 +75,38 @@ func TestReportFromResponseMultipleCurrencies(t *testing.T) {
 
 	report := reportFromResponse(resp)
 
-	if len(report.Windows) != 2 {
-		t.Fatalf("Windows = %d, want 2", len(report.Windows))
+	if len(report.Windows) != 0 {
+		t.Fatalf("Windows = %d, want 0", len(report.Windows))
 	}
-	if report.Windows[0].Label != "Balance (USD)" || report.Windows[1].Label != "Balance (CNY)" {
-		t.Fatalf("labels = %q, %q", report.Windows[0].Label, report.Windows[1].Label)
+	if report.Extra[0].Label != "Balance (USD)" || report.Extra[0].Value != "$5.00" {
+		t.Fatalf("Extra[0] = %+v, want Balance (USD) $5.00", report.Extra[0])
+	}
+	if report.Extra[2].Label != "Balance (CNY)" || report.Extra[2].Value != "¥20.00" {
+		t.Fatalf("Extra[2] = %+v, want Balance (CNY) ¥20.00", report.Extra[2])
+	}
+}
+
+func TestReportFromResponseZeroBalance(t *testing.T) {
+	report := reportFromResponse(&balanceResponse{
+		IsAvailable: true,
+		BalanceInfos: []balanceInfo{{
+			Currency:        "CNY",
+			TotalBalance:    "0",
+			GrantedBalance:  "0.00",
+			ToppedUpBalance: "0",
+		}},
+	})
+
+	if len(report.Windows) != 0 {
+		t.Fatalf("Windows = %d, want 0", len(report.Windows))
+	}
+	if len(report.Extra) != 3 {
+		t.Fatalf("Extra = %+v, want three money facts", report.Extra)
+	}
+	for _, fact := range report.Extra {
+		if fact.Value != "¥0.00" {
+			t.Errorf("%s = %q, want ¥0.00", fact.Label, fact.Value)
+		}
 	}
 }
 

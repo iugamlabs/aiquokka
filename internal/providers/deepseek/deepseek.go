@@ -80,9 +80,9 @@ func getBalance(ctx context.Context, key string) (*balanceResponse, error) {
 	return &out, nil
 }
 
-// reportFromResponse converts a balance response into the shared model. The
-// total balance becomes a remaining-balance window (a full bar that ends at
-// zero), and the granted/topped-up split is surfaced as extra facts.
+// reportFromResponse converts a balance response into the shared model. DeepSeek
+// reports an absolute account balance rather than quota usage, so every amount
+// is surfaced as a fact instead of a progress-bar window.
 func reportFromResponse(resp *balanceResponse) *usage.Report {
 	report := &usage.Report{Provider: "DeepSeek"}
 	if resp == nil || !resp.IsAvailable {
@@ -91,17 +91,18 @@ func reportFromResponse(resp *balanceResponse) *usage.Report {
 	}
 
 	multi := len(resp.BalanceInfos) > 1
+	hasBalance := false
 	for _, info := range resp.BalanceInfos {
 		total, err := parseMoney(info.TotalBalance)
 		if err != nil {
 			continue
 		}
 		tag := currencyTag(info, multi)
-		report.Windows = append(report.Windows, usage.Window{
-			Label:     "Balance" + tag,
-			Remaining: &total,
-			Currency:  info.Currency,
+		report.Extra = append(report.Extra, usage.Fact{
+			Label: "Balance" + tag,
+			Value: usage.FormatMoney(total, info.Currency),
 		})
+		hasBalance = true
 
 		if granted, err := parseMoney(info.GrantedBalance); err == nil {
 			report.Extra = append(report.Extra, usage.Fact{
@@ -116,7 +117,7 @@ func reportFromResponse(resp *balanceResponse) *usage.Report {
 			})
 		}
 	}
-	if len(report.Windows) == 0 {
+	if !hasBalance {
 		report.Extra = append(report.Extra, usage.Fact{Label: "Balance", Value: "unknown"})
 	}
 	return report

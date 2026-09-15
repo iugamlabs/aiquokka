@@ -45,6 +45,18 @@ func TestRenderAlignedUsesSharedBarColumn(t *testing.T) {
 	}
 }
 
+func TestRenderFactsWithoutWindows(t *testing.T) {
+	var out bytes.Buffer
+	Render(&out, &Report{Provider: "DeepSeek", Extra: []Fact{{Label: "Balance", Value: "¥3.98"}}}, time.Time{})
+	got := out.String()
+	if !strings.Contains(got, "Balance:       ¥3.98") {
+		t.Fatalf("rendered output missing balance fact:\n%s", got)
+	}
+	if strings.Contains(got, "no usage windows reported") {
+		t.Fatalf("fact-only report should not report missing windows:\n%s", got)
+	}
+}
+
 func TestRemainingBarFullThenEmpty(t *testing.T) {
 	full := remainingBar(12.34, "USD", 8)
 	if !strings.Contains(full, "$12.34") {

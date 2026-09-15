@@ -44,7 +44,7 @@ func RenderAligned(w io.Writer, r *Report, now time.Time, labelWidth int) {
 	fmt.Fprintln(w, title)
 	fmt.Fprintln(w, strings.Repeat("─", len(stripANSI(title))))
 
-	if len(r.Windows) == 0 {
+	if len(r.Windows) == 0 && len(r.Extra) == 0 && r.ResetCredits == nil {
 		fmt.Fprintln(w, "  no usage windows reported")
 	}
 	for _, win := range r.Windows {

@@ -21,7 +21,7 @@ type Window struct {
 	Limit *int64 `json:"limit,omitempty" yaml:"limit,omitempty"`
 	// Remaining is the amount still available for a prepaid, balance-style
 	// allowance where the provider reports an absolute balance but no starting
-	// amount or limit (e.g. DeepSeek's account balance). When set — and
+	// amount or limit. When set — and
 	// UsedPercent/Used/Limit are not — the renderer draws a full "remaining"
 	// bar labelled with the amount; spending it runs the bar down toward zero.
 	Remaining *float64 `json:"remaining,omitempty" yaml:"remaining,omitempty"`
