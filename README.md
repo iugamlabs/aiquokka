@@ -1,7 +1,7 @@
 # aiquokka
 
 One command to see the usage limits of all your AI coding subscriptions —
-Claude, Codex, Cursor, Grok, Kimi, Copilot, DeepSeek, Kiro, Antigravity, and Z.ai — reading the credentials each official CLI
+Claude, Codex, Cursor, Grok, Kimi, Copilot, DeepSeek, Kiro, Antigravity, Z.ai, and OpenRouter — reading the credentials each official CLI
 already stores (or your existing API key). No tokens to paste, no config.
 
 Forked from [McKean/aiquokka](https://github.com/McKean/aiquokka) and maintained by star-plan.
@@ -57,6 +57,7 @@ aiquokka deepseek  # account balance (remaining money)
 aiquokka kiro      # Kiro CLI monthly credits and overage status
 aiquokka agy       # daily antigravity limits
 aiquokka zai       # Z.ai usage bundles and cash balance
+aiquokka openrouter # OpenRouter account credit balance
 
 aiquokka --watch           # refresh all providers every 60s
 aiquokka claude -w         # watch a single provider
@@ -146,6 +147,9 @@ machine and queries the same usage endpoint that CLI uses.
 | `kiro`   | Kiro CLI credential store (via `kiro-cli /usage`) | `q.<region>.amazonaws.com/getUsageLimits` |
 | `agy`    | `~/.gemini/antigravity-cli/antigravity-oauth-token` | `daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota` |
 | `zai`    | `$ZAI_API_KEY`, or the zai provider in `~/.pi/agent/models.json` | `api.z.ai/api/biz/tokenAccounts/list/my`, `api.z.ai/api/biz/account/query-customer-account-report` |
+| `openrouter` | `$OPENROUTER_MANAGEMENT_KEY` | `openrouter.ai/api/v1/credits` |
+
+OpenRouter balance checks require a [Management API key](https://openrouter.ai/docs/guides/overview/auth/management-api-keys); a regular inference API key cannot access the account-credit endpoint.
 
 aiquokka defaults to `auto`: it reads credentials normally, and silently
 refreshes only when a provider explicitly supports a safe recovery path. For
