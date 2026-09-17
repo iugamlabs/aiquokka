@@ -15,6 +15,7 @@ import (
 	"github.com/star-plan/aiquokka/internal/providers/grok"
 	"github.com/star-plan/aiquokka/internal/providers/kimi"
 	"github.com/star-plan/aiquokka/internal/providers/kiro"
+	"github.com/star-plan/aiquokka/internal/providers/openrouter"
 	"github.com/star-plan/aiquokka/internal/providers/zai"
 )
 
@@ -31,6 +32,7 @@ func All() []provider.Provider {
 		kiro.New(),
 		antigravity.New(),
 		zai.New(),
+		openrouter.New(),
 	}
 }
 

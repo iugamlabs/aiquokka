@@ -40,6 +40,9 @@ func TestCatalogIDsUniqueAndStable(t *testing.T) {
 	if p, ok := reg.ByID("cursor"); !ok || p.Name() != "Cursor" {
 		t.Fatalf("ByID(cursor) = %v, %v", p, ok)
 	}
+	if p, ok := reg.ByID("openrouter"); !ok || p.Name() != "OpenRouter" {
+		t.Fatalf("ByID(openrouter) = %v, %v", p, ok)
+	}
 }
 
 func TestGrokRejectsInMemoryPolicy(t *testing.T) {
