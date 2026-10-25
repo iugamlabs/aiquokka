@@ -58,7 +58,8 @@ release:
     - Cursor credential discovery for Agent and Desktop installations
     - Remaining-quota bars, JSON/YAML output, and live watch mode
     - Automatic credential recovery with an explicit read-only option
-    - Windows, macOS, and Linux binaries
+    - Windows, macOS, and Linux CLI binaries (CGO disabled)
+    - Separate macOS and Linux tray packages with third-party licenses
 
     ### Installation
 

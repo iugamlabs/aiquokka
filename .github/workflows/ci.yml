@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Verify modules
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+      - name: Test CLI and tray
+        run: |
+          go test -race ./...
+          go test -race -tags tray ./...
+          go vet ./...
+          go vet -tags tray ./...
+      - name: Build native tray package
+        env:
+          CGO_ENABLED: '1'
+        run: scripts/build-tray.sh
+
+  cli-builds:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Build all six CLI targets
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          mkdir -p dist
+          for target_os in windows darwin linux; do
+            for target_arch in amd64 arm64; do
+              GOOS="$target_os" GOARCH="$target_arch" go build -o "dist/aiquokka-$target_os-$target_arch" .
+            done
+          done
+      - name: Default dependency graph excludes tray
+        run: |
+          go list -deps . > dist/cli-deps.txt
+          if grep -E 'aiquokka/third_party/systray|gen2brain/beeep' dist/cli-deps.txt; then
+            echo 'default CLI unexpectedly imports desktop dependencies' >&2
+            exit 1
+          fi
