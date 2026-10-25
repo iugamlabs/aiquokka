@@ -10,11 +10,11 @@ import (
 	"os/exec"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
 	"github.com/iugamlabs/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/httpx"
 	"github.com/iugamlabs/aiquokka/internal/provider"
 	"github.com/iugamlabs/aiquokka/internal/usage"
 	"gopkg.in/yaml.v3"
@@ -213,7 +213,7 @@ func runAll(providers []provider.Provider) error {
 }
 
 func runAllStructured(ctx context.Context, providers []provider.Provider) error {
-	results := fetchAll(ctx, providers)
+	results := fetchAnswered(ctx, providers)
 	out := map[string]any{}
 	for _, r := range results {
 		switch {
@@ -231,7 +231,7 @@ func runAllStructured(ctx context.Context, providers []provider.Provider) error 
 // runAllBatch waits for every provider, then prints in fixed provider order.
 // Used when stdout is not a TTY (pipes, redirects).
 func runAllBatch(ctx context.Context, providers []provider.Provider) error {
-	results := fetchAll(ctx, providers)
+	results := fetchAnswered(ctx, providers)
 	now := time.Now()
 
 	var reports []*usage.Report
@@ -426,17 +426,68 @@ func writeProviderError(w io.Writer, name string, err error) {
 // fetchAll runs every provider concurrently and returns results in the same
 // order as providers.
 func fetchAll(ctx context.Context, providers []provider.Provider) []fetchResult {
-	results := make([]fetchResult, len(providers))
-	var wg sync.WaitGroup
-	for i, p := range providers {
-		wg.Add(1)
-		go func(i int, p provider.Provider) {
-			defer wg.Done()
-			r, err := p.Fetch(ctx)
-			results[i] = fetchResult{name: p.Name(), report: r, err: err}
-		}(i, p)
+	return fetchWithin(ctx, providers, 0)
+}
+
+// fetchAnswered bounds one-shot output by the shared HTTP timeout.
+func fetchAnswered(ctx context.Context, providers []provider.Provider) []fetchResult {
+	return fetchWithin(ctx, providers, httpx.Client.Timeout)
+}
+
+// fetchWithin preserves provider order and cancels late work. A buffered channel
+// lets even a provider ignoring cancellation finish without blocking a sender.
+func fetchWithin(ctx context.Context, providers []provider.Provider, deadline time.Duration) []fetchResult {
+	parent := ctx
+	var cancel context.CancelFunc
+	if deadline > 0 {
+		ctx, cancel = context.WithTimeout(ctx, deadline)
+	} else {
+		ctx, cancel = context.WithCancel(ctx)
 	}
-	wg.Wait()
+	defer cancel()
+	type answer struct {
+		i      int
+		report *usage.Report
+		err    error
+	}
+	ch := make(chan answer, len(providers))
+	results := make([]fetchResult, len(providers))
+	done := make([]bool, len(providers))
+	for i, p := range providers {
+		results[i].name = p.Name()
+		go func(i int, p provider.Provider) { r, err := p.Fetch(ctx); ch <- answer{i, r, err} }(i, p)
+	}
+	accept := func(a answer) {
+		results[a.i] = fetchResult{name: providers[a.i].Name(), report: a.report, err: a.err}
+		done[a.i] = true
+	}
+	for remaining := len(providers); remaining > 0; remaining-- {
+		select {
+		case a := <-ch:
+			accept(a)
+		case <-ctx.Done():
+			// Keep answers already delivered before reporting the unfinished providers.
+			for {
+				select {
+				case a := <-ch:
+					accept(a)
+				default:
+					goto drained
+				}
+			}
+		drained:
+			err := ctx.Err()
+			if parent.Err() == nil && deadline > 0 {
+				err = fmt.Errorf("did not answer within %s", deadline)
+			}
+			for i := range results {
+				if !done[i] {
+					results[i].err = err
+				}
+			}
+			return results
+		}
+	}
 	return results
 }
 

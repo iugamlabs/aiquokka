@@ -74,11 +74,20 @@ func Fetch(ctx context.Context) (*usage.Report, error) {
 		return nil, err
 	}
 
+	// Bundles and cash do not depend on each other: ask for both at once, so a
+	// run waits for one round trip instead of two.
+	var cash *accountData
+	var cashErr error // non-fatal: bundles alone are useful
+	cashDone := make(chan struct{})
+	go func() {
+		defer close(cashDone)
+		cash, cashErr = getCash(ctx, jwt)
+	}()
 	bundles, err := getBundles(ctx, jwt)
+	<-cashDone
 	if err != nil {
 		return nil, err
 	}
-	cash, cashErr := getCash(ctx, jwt) // non-fatal: bundles alone are useful
 	if cashErr != nil {
 		cash = nil
 	}
@@ -151,8 +160,8 @@ func reportFromBundles(bundles []bundle) *usage.Report {
 		used := b.TokensMagnitude - b.AvailableBalance
 		report.Windows = append(report.Windows, usage.Window{
 			ID:    bundleID(b),
-			Model: b.SuitableModel,
 			Label: bundleLabel(b, bundles),
+			Model: b.SuitableModel,
 			Used:  &used,
 			Limit: &b.TokensMagnitude,
 		})
@@ -169,6 +178,16 @@ func reportFromBundles(bundles []bundle) *usage.Report {
 		}
 	}
 	return report
+}
+
+// bundleID names a bundle by the model it is for, whether or not the label
+// shows it: the label carries the model only when several bundles are listed.
+// Two effective bundles for one model share an ID.
+func bundleID(b bundle) string {
+	if b.SuitableModel == "" {
+		return "bundle"
+	}
+	return "bundle/" + usage.Slug(b.SuitableModel)
 }
 
 // bundleLabel names a bundle window, adding the model when several bundles
@@ -238,14 +257,4 @@ func hmacSign(secret []byte, data string) string {
 	mac := hmac.New(sha256.New, secret)
 	mac.Write([]byte(data))
 	return b64url(mac.Sum(nil))
-}
-
-// bundleID names a bundle by the model it is for, whether or not the label
-// shows it: the label carries the model only when several bundles are listed.
-// Two effective bundles for one model share an ID.
-func bundleID(b bundle) string {
-	if b.SuitableModel == "" {
-		return "bundle"
-	}
-	return "bundle/" + usage.Slug(b.SuitableModel)
 }
