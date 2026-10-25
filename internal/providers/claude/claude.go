@@ -34,7 +34,7 @@ type limit struct {
 
 // Fetch reads local credentials and returns the current Claude subscription
 // usage. Token refresh follows the credential policy attached to ctx
-// (default: ReadOnly — see --credential-policy).
+// (default: Auto — see --credential-policy).
 func Fetch(ctx context.Context) (*usage.Report, error) {
 	creds, err := loadCredentials(ctx)
 	if err != nil {

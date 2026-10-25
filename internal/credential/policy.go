@@ -1,9 +1,9 @@
 // Package credential defines the credential ownership policy that controls
 // whether aiquokka may refresh or persist provider credentials.
 //
-// Default posture: aiquokka is a credential consumer. Official CLIs / provider
-// clients own identity; aiquokka only reads credentials unless the user
-// explicitly opts into a more permissive policy that the provider supports.
+// Official CLIs / provider clients own identity. The default Auto policy uses
+// only declared safe recovery mechanisms; ReadOnly explicitly forbids aiquokka
+// from refreshing or writing credentials.
 package credential
 
 import (

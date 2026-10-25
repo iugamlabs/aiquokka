@@ -13,10 +13,11 @@
 - **凭据自动恢复**：默认 `auto` 策略在支持的 Provider 上静默刷新过期凭据并安全写回，保留 `readonly` 选项。Codex / Grok 在满足条件的单 Provider 交互查询中支持调用官方登录命令恢复认证。
 - **Codex 重置次数详情**：区分剩余重置次数与当前可用次数，展示重置凭证的到期时间；终端最多列出三条到期明细，JSON / YAML 保留完整返回数据。
 - **清晰的账户余额**：DeepSeek 直接展示余额、赠送余额和充值余额，不再用进度条表达金额；新增 OpenRouter 余额、累计额度与已消费金额查询。
+- **Muse 与桌面托盘**：新增 Muse 订阅额度查询；可选托盘构建支持 macOS / Linux，在菜单栏查看剩余额度并接收告警。默认 CLI 继续保持纯 Go 跨平台构建。
 - **统一 Provider 注册**：子命令、聚合查询与 `--list` 共用同一份 Provider 清单，便于扩展和维护。
 - **跨平台分发**：提供 Windows、macOS、Linux 的 amd64 / arm64 构建，以及 Homebrew、Scoop 和 Go 安装方式。
 
-同时保留多 Provider 并发查询、实时刷新和 JSON / YAML 输出。聚合查询会跳过未配置的服务，单个服务报错不影响其余结果；交互终端按固定顺序展示，并随着响应到达逐项更新。
+同时保留多 Provider 并发查询、实时刷新和 JSON / YAML 输出。聚合查询会跳过未配置的服务，单个服务报错不影响其余结果；交互终端按固定顺序展示，并随着响应到达逐项更新。非交互聚合查询约等待 15 秒，保留已完成结果并为未响应服务输出错误。
 
 ## 安装
 
@@ -57,6 +58,7 @@ aiquokka                  # 汇总所有已配置的服务
 aiquokka --list           # 列出支持的 Provider，也可用 aiquokka list
 aiquokka codex            # 仅查看 Codex
 aiquokka cursor           # 仅查看 Cursor
+aiquokka muse             # 仅查看 Muse
 aiquokka --watch          # 每 60 秒刷新全部服务
 aiquokka codex -w         # 持续查看单个服务
 aiquokka --version        # 查看版本
@@ -69,7 +71,7 @@ Watch 模式下，交互终端会显示下次刷新的倒计时。按 `r` 立即
 
 | 命令 | 查询内容 | 凭据来源 |
 | --- | --- | --- |
-| `claude` | 5 小时、每周及 Weekly Fable 额度 | `~/.claude/.credentials.json`，或 macOS Keychain |
+| `claude` | 5 小时、每周及 Weekly Fable 额度 | `$CLAUDE_CONFIG_DIR/.credentials.json`（默认 `~/.claude/.credentials.json`），或 macOS Keychain |
 | `codex` | 5 小时 / 每周额度、重置次数与到期明细 | `~/.codex/auth.json` |
 | `cursor` | 当前账期额度、Auto / API 使用率及按量消费信息 | Cursor Agent 登录文件、系统凭据存储，或 Desktop 的 `state.vscdb` |
 | `kimi` | Kimi Code 的 5 小时及每周额度 | `~/.kimi-code` / `~/.kimi` 中的 OAuth 凭据，或 `KIMI_API_KEY` |
@@ -77,9 +79,10 @@ Watch 模式下，交互终端会显示下次刷新的倒计时。按 `r` 立即
 | `copilot` | Premium、Chat、Completions 额度 | GitHub Copilot 配置目录中的 `apps.json` / `hosts.json` |
 | `deepseek` | 余额、赠送余额与充值余额 | `DEEPSEEK_API_KEY` |
 | `kiro` | 月度积分、套餐、重置日期与超额状态 | 调用已安装的 `kiro-cli /usage`，由官方 CLI 管理凭据 |
-| `antigravity`（别名 `agy`） | Antigravity 配额 | `~/.gemini/antigravity-cli/antigravity-oauth-token` |
+| `antigravity`（别名 `agy`） | Antigravity 配额 | 调用已登录的官方 `agy -p /usage --output-format json` |
 | `zai` | 预付费资源包与现金余额 | `ZAI_API_KEY`，或 `~/.pi/agent/models.json` 中的 zai 配置 |
 | `openrouter` | 账户余额、累计额度与已消费金额 | `OPENROUTER_MANAGEMENT_KEY` |
+| `muse` | 5 小时及每周订阅额度 | `MUSE_AUTH_PATH` 或 `$XDG_CONFIG_HOME/muse/auth.json`（默认 `~/.config/muse/auth.json`）；缺少内联令牌时调用 `muse serve` |
 
 各服务只展示接口实际返回的数据，具体窗口和字段取决于账户与套餐。直接指定未配置的 Provider 会显示配置提示。
 
@@ -122,28 +125,56 @@ aiquokka --watch --json     # 每次刷新输出一个新的 JSON 文档
 
 结构化输出中的 `used_percent` 仍表示**已用百分比**，与终端显示的 `left` 含义不同。Watch 模式会连续输出多个文档，读取脚本需要逐次处理。
 
+窗口增加稳定的 `id`，已知周期以 `duration_seconds` 表示，特定模型额度可包含 `model`。已知周期与重置时间时，`target_percent` 从周期起点的 10 线性增长到终点的 90（`10 + 80 × Pace`），是带缓冲的已用目标；它与终端原始线性节奏标记不同。缺失信息不推测，未知 `resets_at` 省略，`windows` 为空时为 `[]`。
+
+可识别登录账户时，`account` 仅包含可用的 `id` / `email`，不输出令牌。Codex 的完整 `reset_credits` 保留。退出码：成功 `0`，指定服务未配置／未登录 `3`，其他失败 `1`；聚合查询仍以各服务的 `error` 字段表达局部错误。
+
 ## 凭据策略与认证恢复
 
-默认策略为 `auto`：凭据正常时直接读取；过期时使用 Provider 声明支持的恢复方式。Claude、Codex、Cursor、Grok 支持刷新并持久化新凭据。刷新令牌可能轮换，因此刷新后需要安全写回，避免丢弃新令牌。
+默认策略为 `auto`：凭据正常时直接读取；过期时使用 Provider 声明支持的恢复方式。Claude、Codex、Cursor、Grok、Kimi 支持刷新并持久化新凭据。刷新令牌可能轮换，因此刷新后需要安全写回，避免丢弃新令牌。
 
 ```sh
 aiquokka codex                              # 默认 auto
 aiquokka --credential-policy readonly       # aiquokka 不刷新或写回凭据
+aiquokka --no-refresh                       # readonly 的兼容入口
 aiquokka --credential-policy persist codex   # 显式使用刷新并写回策略
 ```
 
 | 策略 | 行为 |
 | --- | --- |
 | `auto` | 默认；按 Provider 能力选择安全恢复方式，无法恢复时提示通过官方 CLI 登录 |
-| `readonly` | aiquokka 不刷新或写回凭据；Kiro 的查询仍由官方 CLI 执行，其凭据由官方 CLI 管理 |
+| `readonly` | aiquokka 不刷新或写回凭据；Kiro、Antigravity 和 Muse CLI 查询仍由官方客户端管理自己的凭据 |
 | `memory` | 仅在进程内刷新，不写回；当前所有 Provider 均不支持，使用时会报错 |
-| `persist` | 在需要时刷新并安全写回；目前仅 Claude、Codex、Cursor、Grok 支持 |
+| `persist` | 在需要时刷新并安全写回；目前仅 Claude、Codex、Cursor、Grok、Kimi 支持 |
 
-策略对本次调用的所有 Provider 生效，不用于切换账号。不支持的策略会明确报错。
+策略对本次调用的所有 Provider 生效，不用于切换账号。不支持的策略会明确报错。`--no-refresh` 可与显式 `readonly` 同用，与显式 `auto` / `memory` / `persist` 同用时报参数冲突。
+
+Muse 文件登录查询在进程内缓存五分钟；未报告活动窗口时显示未知及提示。CLI 默认最多等待 15 秒，可用 `AIQUOKKA_MUSE_CLI_TIMEOUT=30s` 调整，但调用方更短的超时仍生效。macOS 上 CLI 登录成功却没有用量时，可先执行 `muse logout`，再执行 `TBH_CREDENTIAL_BACKEND=file muse login`，并在后续使用 Muse 时保持该环境变量。
 
 Codex / Grok 的静默刷新成功后，原查询最多重试一次。如果需要重新登录，只有在**单独查询该 Provider、输入输出均为交互终端、非 watch、非 JSON / YAML、非 CI** 时，才可能自动运行 `codex login` 或 `grok login`，成功后重新查询。聚合查询和脚本环境会显示登录提示。
 
 macOS 上，Claude 优先读取包含 OAuth access token 的凭据文件，否则通过系统 `security` 工具读取 Keychain。通过 SSH 使用时，如钥匙串被锁定，可先执行 `security unlock-keychain`。
+
+## 可选桌面托盘
+
+默认安装的 CLI 包含 `tray` 命令提示。完整托盘版本单独构建，支持 macOS / Linux；它也保留普通 CLI 子命令。托盘百分比和额度条表示剩余（`left`），告警阈值按**已用比例**计算，默认 80%。
+
+```sh
+# Linux
+CGO_ENABLED=0 go build -tags tray -o aiquokka-tray .
+# macOS：需要 Xcode Command Line Tools
+CGO_ENABLED=1 go build -tags tray -o aiquokka-tray .
+
+./aiquokka-tray tray                  # 每分钟刷新，默认监控全部服务
+./aiquokka-tray tray -p agy           # 支持 Registry 中的 Provider ID / 别名
+./aiquokka-tray tray --pin claude     # 顶栏固定 Claude，菜单仍显示全部服务
+./aiquokka-tray tray --interval 2m --threshold 90
+./aiquokka-tray tray --no-refresh
+```
+
+`bar`、`menu`、`systray` 是 `tray` 的别名。设置保存在系统用户配置目录的 `aiquokka/tray.json`，显式参数优先。macOS 提供原生偏好窗口，Linux 提供子菜单；刷新间隔至少一分钟。托盘不支持 `--watch` 或 JSON / YAML 输出。
+
+可运行 `scripts/build-tray.sh` 生成包含许可证的独立压缩包；发布工作流生成 `aiquokka-tray-{linux,macos}-{amd64,arm64}.tar.gz` 和 `TRAY_SHA256SUMS`。默认 CLI 仍提供 Windows、macOS、Linux 六种纯 Go 构建。
 
 ## 注意事项
 
@@ -153,4 +184,6 @@ macOS 上，Claude 优先读取包含 OAuth access token 的凭据文件，否�
 
 感谢上游 [McKean/aiquokka](https://github.com/McKean/aiquokka) 提供基础实现。本 fork 在此基础上持续改进 Provider 支持、额度展示与凭据恢复。
 
-采用 [MIT License](LICENSE)。
+维护与后续上游同步请参阅 [fork 合并指南](docs/fork-merge-guide.md)。
+
+项目采用 [MIT License](LICENSE)。托盘附带的 systray 和图标许可见 [第三方说明](third_party/NOTICE.md)。

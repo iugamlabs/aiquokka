@@ -44,7 +44,7 @@ type userResponse struct {
 
 // Fetch reports Grok's usage-limit window (weekly for subscription accounts)
 // plus the subscription tier. Token refresh follows the credential policy
-// attached to ctx (default: ReadOnly — see --credential-policy).
+// attached to ctx (default: Auto — see --credential-policy).
 func Fetch(ctx context.Context) (*usage.Report, error) {
 	acc, storeKey, err := loadAccount()
 	if err != nil {
