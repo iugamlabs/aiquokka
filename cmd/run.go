@@ -47,6 +47,16 @@ func withCredentialPolicy(ctx context.Context) context.Context {
 	return credential.WithPolicy(ctx, policy)
 }
 
+// fetchProvider enforces the registry's declared credential capabilities before
+// a terminal, batch or tray query can touch credentials or launch a client.
+func fetchProvider(ctx context.Context, p provider.Provider) (*usage.Report, error) {
+	policy := credential.PolicyFrom(ctx)
+	if err := provider.CapabilitiesOf(p).Allows(policy); err != nil {
+		return nil, &credential.PolicyError{Provider: p.Name(), Policy: policy, Err: err}
+	}
+	return p.Fetch(ctx)
+}
+
 // run executes a single provider fetch and renders the result honoring --json.
 // With --watch, it refreshes every watchInterval until interrupted.
 func run(p provider.Provider) error {
@@ -71,7 +81,7 @@ func fetchSingle(parent context.Context, p provider.Provider) (*usage.Report, er
 	fetch := func() (*usage.Report, error) {
 		ctx, cancel := context.WithTimeout(withCredentialPolicy(parent), 20*time.Second)
 		defer cancel()
-		return p.Fetch(ctx)
+		return fetchProvider(ctx, p)
 	}
 
 	report, err := fetch()
@@ -298,7 +308,7 @@ func runAllLive(ctx context.Context, providers []provider.Provider) error {
 	ch := make(chan event, len(providers))
 	for i, p := range providers {
 		go func(i int, p provider.Provider) {
-			r, err := p.Fetch(ctx)
+			r, err := fetchProvider(ctx, p)
 			ch <- event{i: i, report: r, err: err}
 		}(i, p)
 	}
@@ -455,7 +465,7 @@ func fetchWithin(ctx context.Context, providers []provider.Provider, deadline ti
 	done := make([]bool, len(providers))
 	for i, p := range providers {
 		results[i].name = p.Name()
-		go func(i int, p provider.Provider) { r, err := p.Fetch(ctx); ch <- answer{i, r, err} }(i, p)
+		go func(i int, p provider.Provider) { r, err := fetchProvider(ctx, p); ch <- answer{i, r, err} }(i, p)
 	}
 	accept := func(a answer) {
 		results[a.i] = fetchResult{name: providers[a.i].Name(), report: a.report, err: a.err}

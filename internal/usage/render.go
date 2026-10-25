@@ -268,3 +268,6 @@ const (
 
 // stripANSI removes color codes for length calculations.
 func stripANSI(s string) string { return s }
+
+// HumanizeReset formats a reset time for terminal and tray views.
+func HumanizeReset(t, now time.Time) string { return humanizeReset(t, now) }

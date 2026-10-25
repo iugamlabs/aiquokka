@@ -73,6 +73,7 @@ func newRootCmd() *cobra.Command {
 	root.MarkFlagsMutuallyExclusive("json", "yml")
 
 	root.AddCommand(newListCmd())
+	root.AddCommand(newTrayCmd())
 	for _, p := range registry.All() {
 		root.AddCommand(newProviderCmd(p))
 	}

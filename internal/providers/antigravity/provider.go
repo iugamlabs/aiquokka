@@ -3,6 +3,7 @@ package antigravity
 import (
 	"context"
 
+	"github.com/iugamlabs/aiquokka/internal/credential"
 	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
@@ -18,4 +19,8 @@ func (*Provider) Description() string { return "Check Google Antigravity usage l
 func (*Provider) Aliases() []string   { return []string{"agy"} }
 func (*Provider) Fetch(ctx context.Context) (*usage.Report, error) {
 	return Fetch(ctx)
+}
+
+func (*Provider) Capabilities() credential.Capabilities {
+	return credential.Capabilities{OfficialCLIRefresh: true}
 }
