@@ -150,6 +150,8 @@ func reportFromBundles(bundles []bundle) *usage.Report {
 		}
 		used := b.TokensMagnitude - b.AvailableBalance
 		report.Windows = append(report.Windows, usage.Window{
+			ID:    bundleID(b),
+			Model: b.SuitableModel,
 			Label: bundleLabel(b, bundles),
 			Used:  &used,
 			Limit: &b.TokensMagnitude,
@@ -186,6 +188,7 @@ func appendCash(report *usage.Report, cash *accountData) {
 	}
 	balance := cash.Balance
 	report.Windows = append(report.Windows, usage.Window{
+		ID:        "cash",
 		Label:     "Cash",
 		Remaining: &balance,
 		Currency:  currency(),
@@ -235,4 +238,14 @@ func hmacSign(secret []byte, data string) string {
 	mac := hmac.New(sha256.New, secret)
 	mac.Write([]byte(data))
 	return b64url(mac.Sum(nil))
+}
+
+// bundleID names a bundle by the model it is for, whether or not the label
+// shows it: the label carries the model only when several bundles are listed.
+// Two effective bundles for one model share an ID.
+func bundleID(b bundle) string {
+	if b.SuitableModel == "" {
+		return "bundle"
+	}
+	return "bundle/" + usage.Slug(b.SuitableModel)
 }

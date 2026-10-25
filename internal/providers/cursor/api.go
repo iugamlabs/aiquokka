@@ -118,7 +118,7 @@ func buildReport(period periodUsage, planName string) *usage.Report {
 
 	start := parseTimestamp(period.BillingCycleStart)
 	end := parseTimestamp(period.BillingCycleEnd)
-	window := usage.Window{Label: "Billing", ResetsAt: end}
+	window := usage.Window{ID: "billing", Label: "Billing", ResetsAt: end}
 	if !start.IsZero() && !end.IsZero() && end.After(start) {
 		window.Duration = end.Sub(start)
 	}

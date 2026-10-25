@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/iugamlabs/aiquokka/internal/credential"
 	"github.com/iugamlabs/aiquokka/internal/httpx/httpxtest"
@@ -116,5 +117,46 @@ func TestRefreshPropagatesPersistenceFailure(t *testing.T) {
 	_, err := Fetch(context.Background())
 	if err == nil {
 		t.Fatal("persistence failure must fail refresh")
+	}
+}
+
+func TestFetchWindowIDsAndLengths(t *testing.T) {
+	storeLogin(t, `{"access_token":"tok"}`)
+	httpxtest.Stub(t, func(*http.Request) (int, string) {
+		return http.StatusOK, `{
+			"usage": {"used": "78", "limit": "100"},
+			"limits": [{"detail": {"used": "15", "limit": "100"}, "window": {"duration": 300, "timeUnit": "TIME_UNIT_MINUTE"}}]
+		}`
+	})
+
+	report, err := Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Windows) != 2 {
+		t.Fatalf("windows = %+v", report.Windows)
+	}
+	if w := report.Windows[0]; w.ID != "5h" || w.Duration != 5*time.Hour {
+		t.Fatalf("limit window = %+v", w)
+	}
+	if w := report.Windows[1]; w.ID != "weekly" || w.Duration != 7*24*time.Hour {
+		t.Fatalf("weekly window = %+v", w)
+	}
+	if report.Account != nil {
+		t.Fatalf("Kimi's login names no account, got %+v", report.Account)
+	}
+}
+
+// The ID must not follow a display name the API sends for the window.
+func TestLimitIDIgnoresTheLabel(t *testing.T) {
+	spec := window{Duration: 5, TimeUnit: "HOUR"}
+	if label := windowLabel(row{Name: "Rolling window"}, spec); label != "Rolling window" {
+		t.Fatalf("label = %q", label)
+	}
+	if id := limitID(windowDuration(spec)); id != "5h" {
+		t.Fatalf("id = %q, want 5h", id)
+	}
+	if id := limitID(0); id != "limit" {
+		t.Fatalf("id without a length = %q, want limit", id)
 	}
 }

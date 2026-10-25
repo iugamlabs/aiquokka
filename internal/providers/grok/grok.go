@@ -53,7 +53,7 @@ func Fetch(ctx context.Context) (*usage.Report, error) {
 		return nil, err
 	}
 
-	report := &usage.Report{Provider: "Grok"}
+	report := &usage.Report{Provider: "Grok", Account: usage.NewAccount(acc.UserID, acc.Email)}
 
 	// Subscription tier + Grok Code access (best-effort; don't fail the whole
 	// report if this call errors).
@@ -89,7 +89,7 @@ func billingWindow(b *billingResponse) *usage.Window {
 	if b.Config.CreditUsagePercent != nil {
 		pct = *b.Config.CreditUsagePercent
 	}
-	w := usage.Window{Label: periodLabel(cp.Type), UsedPercent: &pct}
+	w := usage.Window{ID: periodID(cp.Type), Label: periodLabel(cp.Type), UsedPercent: &pct}
 	var start, end time.Time
 	if cp.End != "" {
 		if t, err := time.Parse(time.RFC3339, cp.End); err == nil {
@@ -181,4 +181,13 @@ func doGet(ctx context.Context, bearer, path string, out any) (int, error) {
 		}
 	}
 	return resp.StatusCode, nil
+}
+
+// periodID turns USAGE_PERIOD_TYPE_WEEKLY into "weekly": the API's own period
+// type, which the label only restates.
+func periodID(t string) string {
+	if id := strings.ToLower(strings.TrimPrefix(strings.ToUpper(t), "USAGE_PERIOD_TYPE_")); id != "" {
+		return id
+	}
+	return "usage"
 }

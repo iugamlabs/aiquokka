@@ -7,6 +7,7 @@ import (
 
 	"github.com/iugamlabs/aiquokka/internal/buildinfo"
 	"github.com/iugamlabs/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 	"github.com/spf13/cobra"
 )
 
@@ -124,3 +125,22 @@ func (v *policyValue) Set(s string) error {
 }
 
 func (v *policyValue) Type() string { return "policy" }
+
+// Exit statuses. A script tells "this provider has no login here" (nothing to
+// report, and retrying will not help) from a failure that may pass. 2 is left
+// free: shells and many tools use it for a wrong command line.
+const (
+	ExitFailure     = 1
+	ExitNotLoggedIn = 3
+)
+
+// ExitCode maps the error Execute returned to the process's exit status.
+func ExitCode(err error) int {
+	switch {
+	case err == nil:
+		return 0
+	case usage.IsNotConfigured(err):
+		return ExitNotLoggedIn
+	}
+	return ExitFailure
+}

@@ -104,6 +104,7 @@ func Fetch(ctx context.Context) (*usage.Report, error) {
 	for _, l := range resp.Limits {
 		if w := toWindow(windowLabel(l.Detail, l.Window), l.Detail); w != nil {
 			w.Duration = windowDuration(l.Window)
+			w.ID = limitID(w.Duration)
 			report.Windows = append(report.Windows, *w)
 		}
 	}
@@ -111,6 +112,7 @@ func Fetch(ctx context.Context) (*usage.Report, error) {
 	if resp.Usage != nil {
 		if w := toWindow("Weekly", *resp.Usage); w != nil {
 			w.Duration = 7 * 24 * time.Hour
+			w.ID = "weekly"
 			report.Windows = append(report.Windows, *w)
 		}
 	}
@@ -244,4 +246,13 @@ func baseURLFromEnv() string {
 		return strings.TrimRight(v, "/")
 	}
 	return baseURL()
+}
+
+// limitID names a limits[] window by its length ("5h"), never by the label:
+// the label is the API's display name when it sends one, and that may change.
+func limitID(d time.Duration) string {
+	if id := usage.LengthID(d); id != "" {
+		return id
+	}
+	return "limit"
 }

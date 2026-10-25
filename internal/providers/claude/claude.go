@@ -58,6 +58,7 @@ func Fetch(ctx context.Context) (*usage.Report, error) {
 	report := &usage.Report{
 		Provider: "Claude",
 		Plan:     plan(creds),
+		Account:  loadAccount(),
 	}
 	for _, w := range []*usage.Window{
 		resp.window("session", "5h", 5*time.Hour),
@@ -90,7 +91,10 @@ func (resp *usageResponse) window(kind, label string, d time.Duration) *usage.Wi
 		if l.Kind != kind || l.Percent == nil {
 			continue
 		}
-		out := usage.Window{Label: label, UsedPercent: l.Percent, Duration: d}
+		out := usage.Window{ID: kind, Label: label, UsedPercent: l.Percent, Duration: d}
+		if kind == "weekly_scoped" {
+			out.Model = "Fable"
+		}
 		if t, err := time.Parse(time.RFC3339, l.ResetsAt); err == nil {
 			out.ResetsAt = t
 		}

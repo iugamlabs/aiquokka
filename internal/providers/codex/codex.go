@@ -81,10 +81,13 @@ func Fetch(ctx context.Context) (*usage.Report, error) {
 	// The window that is "primary" vs "secondary" depends on the plan (a Plus
 	// plan reports only the weekly window as primary), so label each by its
 	// actual duration rather than by position.
-	report := &usage.Report{Provider: "Codex", Plan: resp.PlanType}
+	report := &usage.Report{Provider: "Codex", Plan: resp.PlanType, Account: auth.account()}
 	now := time.Now()
-	for _, w := range []*window{resp.RateLimit.Primary, resp.RateLimit.Secondary} {
+	for i, w := range []*window{resp.RateLimit.Primary, resp.RateLimit.Secondary} {
 		if win := toWindow(w, now); win != nil {
+			if win.ID = usage.LengthID(win.Duration); win.ID == "" {
+				win.ID = []string{"primary", "secondary"}[i]
+			}
 			report.Windows = append(report.Windows, *win)
 		}
 	}
