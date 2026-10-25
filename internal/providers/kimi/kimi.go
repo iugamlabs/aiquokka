@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iugamlabs/aiquokka/internal/credential"
 	"github.com/iugamlabs/aiquokka/internal/httpx"
 	"github.com/iugamlabs/aiquokka/internal/usage"
 )
@@ -80,6 +81,9 @@ type usagesResponse struct {
 // Fetch reads the Kimi Code token (refreshing it if needed) and returns the
 // current usage windows.
 func Fetch(ctx context.Context) (*usage.Report, error) {
+	if err := capabilities().Allows(credential.PolicyFrom(ctx)); err != nil {
+		return nil, &credential.PolicyError{Provider: "Kimi", Policy: credential.PolicyFrom(ctx), Err: err}
+	}
 	creds, err := load()
 	if err != nil {
 		return nil, err

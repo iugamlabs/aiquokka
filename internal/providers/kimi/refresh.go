@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iugamlabs/aiquokka/internal/credential"
 	"github.com/iugamlabs/aiquokka/internal/httpx"
 )
 
@@ -38,6 +39,10 @@ func clientID() string {
 // refresh exchanges the refresh token for a fresh access token, updates c in
 // place, and writes the result back to the credentials file.
 func refresh(ctx context.Context, c *credentials) error {
+	return credential.Apply("Kimi", credential.PolicyFrom(ctx), capabilities(), credential.RefreshFuncs{Persist: func() error { return refreshAndPersist(ctx, c) }})
+}
+
+func refreshAndPersist(ctx context.Context, c *credentials) error {
 	if c.refreshToken == "" {
 		return fmt.Errorf("Kimi token expired and no refresh token available — run `kimi` to re-login")
 	}
@@ -78,10 +83,7 @@ func refresh(ctx context.Context, c *credentials) error {
 	if out.ExpiresIn > 0 {
 		c.expiresAt = time.Now().Add(time.Duration(out.ExpiresIn) * time.Second).Unix()
 	}
-	if err := c.persist(out); err != nil {
-		fmt.Fprintf(os.Stderr, "aiquokka: warning: could not persist refreshed Kimi token: %v\n", err)
-	}
-	return nil
+	return c.persist(out)
 }
 
 // persist writes the refreshed token fields back to the credentials file,
@@ -120,5 +122,5 @@ func (c *credentials) persist(out oauthFile) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(c.file, merged, 0o600)
+	return credential.WriteFileAtomic(c.file, append(merged, '\n'), 0o600)
 }

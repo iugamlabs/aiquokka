@@ -2,11 +2,12 @@
 package cmd
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/iugamlabs/aiquokka/internal/buildinfo"
 	"github.com/iugamlabs/aiquokka/internal/credential"
+	"github.com/spf13/cobra"
 )
 
 // Global output-format flags: emit raw structured output instead of the
@@ -15,6 +16,7 @@ var (
 	jsonOut          bool
 	yamlOut          bool
 	watch            bool
+	noRefresh        bool
 	listProvidersFlg bool
 	credentialPolicy = credential.DefaultPolicy
 )
@@ -41,7 +43,13 @@ func newRootCmd() *cobra.Command {
     ░ used (dim)
     cyan marker = where even pace would leave you now
     percentages are remaining (left); --json/--yaml still report used_percent`,
-		Args:          cobra.NoArgs,
+		Args: cobra.NoArgs,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if noRefresh && cmd.Flags().Changed("credential-policy") && credentialPolicy != credential.ReadOnly {
+				return fmt.Errorf("--no-refresh conflicts with --credential-policy %s", credentialPolicy)
+			}
+			return nil
+		},
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -57,6 +65,7 @@ func newRootCmd() *cobra.Command {
 	root.PersistentFlags().BoolVar(&jsonOut, "json", false, "emit raw JSON instead of rendered output")
 	root.PersistentFlags().BoolVar(&yamlOut, "yaml", false, "emit raw YAML instead of rendered output")
 	root.PersistentFlags().BoolVar(&yamlOut, "yml", false, "alias for --yaml")
+	root.PersistentFlags().BoolVar(&noRefresh, "no-refresh", false, "do not refresh or write credentials (alias for --credential-policy readonly)")
 	root.PersistentFlags().BoolVarP(&watch, "watch", "w", false, "refresh every 60s (r refresh, q close)")
 	root.PersistentFlags().Var(newPolicyValue(&credentialPolicy), "credential-policy", "credential refresh policy: auto, readonly, memory, or persist")
 	root.MarkFlagsMutuallyExclusive("json", "yaml")

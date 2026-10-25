@@ -40,7 +40,11 @@ func emit(v any) error {
 
 // withCredentialPolicy attaches the global --credential-policy to ctx.
 func withCredentialPolicy(ctx context.Context) context.Context {
-	return credential.WithPolicy(ctx, credentialPolicy)
+	policy := credentialPolicy
+	if noRefresh {
+		policy = credential.ReadOnly
+	}
+	return credential.WithPolicy(ctx, policy)
 }
 
 // run executes a single provider fetch and renders the result honoring --json.
