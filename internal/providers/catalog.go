@@ -15,6 +15,7 @@ import (
 	"github.com/iugamlabs/aiquokka/internal/providers/grok"
 	"github.com/iugamlabs/aiquokka/internal/providers/kimi"
 	"github.com/iugamlabs/aiquokka/internal/providers/kiro"
+	"github.com/iugamlabs/aiquokka/internal/providers/muse"
 	"github.com/iugamlabs/aiquokka/internal/providers/openrouter"
 	"github.com/iugamlabs/aiquokka/internal/providers/zai"
 )
@@ -33,6 +34,7 @@ func All() []provider.Provider {
 		antigravity.New(),
 		zai.New(),
 		openrouter.New(),
+		muse.New(),
 	}
 }
 

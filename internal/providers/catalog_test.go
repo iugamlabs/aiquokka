@@ -43,6 +43,10 @@ func TestCatalogIDsUniqueAndStable(t *testing.T) {
 	if p, ok := reg.ByID("openrouter"); !ok || p.Name() != "OpenRouter" {
 		t.Fatalf("ByID(openrouter) = %v, %v", p, ok)
 	}
+	if p, ok := reg.ByID("muse"); !ok || p.Name() != "Muse" {
+		t.Fatal("Muse missing from registry")
+	}
+
 }
 
 func TestGrokRejectsInMemoryPolicy(t *testing.T) {
