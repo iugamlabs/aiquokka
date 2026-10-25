@@ -1,234 +1,156 @@
 # aiquokka
 
-One command to see the usage limits of all your AI coding subscriptions —
-Claude, Codex, Cursor, Grok, Kimi, Copilot, DeepSeek, Kiro, Antigravity, Z.ai, and OpenRouter — reading the credentials each official CLI
-already stores (or your existing API key). No tokens to paste, no config.
+在终端里统一查看 AI 编程助手的剩余额度、重置时间和 API 账户余额。
 
-Forked from [McKean/aiquokka](https://github.com/McKean/aiquokka) and maintained by star-plan.
+本项目是 [McKean/aiquokka](https://github.com/McKean/aiquokka) 的 fork，由 [iugamlabs](https://github.com/iugamlabs/aiquokka) 维护。复用官方 CLI / 客户端已有的登录凭据，也支持通过环境变量提供 API Key。
 
-![aiquokka demo](docs/demo.gif)
+![aiquokka 终端界面](docs/screenshot.webp)
 
-- **All in one place** — run `aiquokka` bare to see every provider at once.
-- **Only what you use** — providers you aren't logged into are skipped silently.
-- **Pace marker** — each bar shows where even, linear usage would put you right
-  now, so you can tell at a glance if you're burning too fast.
-- **Credential-safe by default** — credentials are only read unless you explicitly opt into a supported refresh policy.
-- **Scriptable** — `--json` / `--yaml` for machine-readable output.
-- **Live watch** — `--watch` / `-w` refreshes the view every 60 seconds.
+## 本 fork 的特色
 
-## Install
+- **Cursor 支持**：自动发现 Cursor Agent、系统凭据存储和 Cursor Desktop 的凭据，查看当前账期额度。使用服务端返回的使用率；缺少百分比时显示未知，不根据消费金额猜测额度。
+- **直观的剩余额度**：进度条与 `left` 百分比统一表示剩余额度，配合绿 / 黄 / 红颜色和青色用量节奏标记；聚合视图中的进度条统一对齐。
+- **凭据自动恢复**：默认 `auto` 策略在支持的 Provider 上静默刷新过期凭据并安全写回，保留 `readonly` 选项。Codex / Grok 在满足条件的单 Provider 交互查询中支持调用官方登录命令恢复认证。
+- **Codex 重置次数详情**：区分剩余重置次数与当前可用次数，展示重置凭证的到期时间；终端最多列出三条到期明细，JSON / YAML 保留完整返回数据。
+- **清晰的账户余额**：DeepSeek 直接展示余额、赠送余额和充值余额，不再用进度条表达金额；新增 OpenRouter 余额、累计额度与已消费金额查询。
+- **统一 Provider 注册**：子命令、聚合查询与 `--list` 共用同一份 Provider 清单，便于扩展和维护。
+- **跨平台分发**：提供 Windows、macOS、Linux 的 amd64 / arm64 构建，以及 Homebrew、Scoop 和 Go 安装方式。
+
+同时保留多 Provider 并发查询、实时刷新和 JSON / YAML 输出。聚合查询会跳过未配置的服务，单个服务报错不影响其余结果；交互终端按固定顺序展示，并随着响应到达逐项更新。
+
+## 安装
+
+### Homebrew
 
 ```sh
-# Homebrew
-brew tap star-plan/tap
+brew tap iugamlabs/tap
 brew install aiquokka
 ```
 
+### Scoop
+
 ```powershell
-# Scoop
-scoop bucket add star-plan https://github.com/star-plan/scoop
+scoop bucket add iugamlabs https://github.com/iugamlabs/scoop
 scoop install aiquokka
 ```
 
+### Go
+
+需要 Go 1.26.5 或更高版本，具体要求见 [go.mod](go.mod)。
+
 ```sh
-# Go
-go install github.com/star-plan/aiquokka@latest
+go install github.com/iugamlabs/aiquokka@latest
 ```
 
-Requires Go (macOS: `brew install go`, Linux: use your package manager or https://go.dev/dl/).
-
-Or build from source:
+也可以从 [Releases](https://github.com/iugamlabs/aiquokka/releases) 下载对应平台的二进制，或在源码目录构建：
 
 ```sh
 go build -o aiquokka .
 ```
 
-## Usage
+## 使用
+
+先在官方 CLI / 客户端登录，或为使用 API Key 的服务配置下表中的环境变量，然后运行：
 
 ```sh
-aiquokka           # all configured providers at once
-aiquokka claude    # 5-hour, weekly, and weekly Fable limits
-aiquokka codex     # weekly limit + remaining resets
-aiquokka cursor    # Cursor billing-cycle usage
-aiquokka kimi      # 5-hour and weekly limits
-aiquokka grok      # weekly usage limit + subscription tier
-aiquokka copilot   # copilot chat/completions limits
-aiquokka deepseek  # account balance (remaining money)
-aiquokka kiro      # Kiro CLI monthly credits and overage status
-aiquokka agy       # daily antigravity limits
-aiquokka zai       # Z.ai usage bundles and cash balance
-aiquokka openrouter # OpenRouter account credit balance
-
-aiquokka --watch           # refresh all providers every 60s
-aiquokka claude -w         # watch a single provider
+aiquokka                  # 汇总所有已配置的服务
+aiquokka --list           # 列出支持的 Provider，也可用 aiquokka list
+aiquokka codex            # 仅查看 Codex
+aiquokka cursor           # 仅查看 Cursor
+aiquokka --watch          # 每 60 秒刷新全部服务
+aiquokka codex -w         # 持续查看单个服务
+aiquokka --version        # 查看版本
+aiquokka --help           # 查看帮助
 ```
 
-```
-$ aiquokka claude
-Claude  (max/default_claude_max_5x)
-───────────────────────────────────
-  5h           [██████████████████▒░░░░░]  76.0% left   resets in 33m (Mon 19:00)
-  Weekly       [█████████████▒░░░░░░░░░░]  55.0% left   resets in 2d20h (Thu 14:27)
-  Weekly Fable [████████▒░░░░░░░░░░░░░░░]  33.0% left   resets in 2d20h (Thu 14:27)
-```
+Watch 模式下，交互终端会显示下次刷新的倒计时。按 `r` 立即刷新，按 `q` 或 Ctrl+C 退出。
 
-Fable draws from the same weekly pool and may take up to half of it, so it is
-often the limit you hit first. The two bars move together: `Weekly Fable` at
-100% puts `Weekly` at 50% or more.
+### 支持的服务与凭据来源
 
-Run with no subcommand to fetch every provider concurrently. In a terminal, a
-fixed-order skeleton appears for the providers you use, then each section fills
-in as its response arrives — you keep a stable order without waiting for the
-slowest provider before seeing anything. Providers you aren't logged into are
-skipped; a provider that *is* configured but errors is shown inline without
-aborting the rest. Calling a provider directly (e.g. `aiquokka kimi`) always
-tells you if it isn't set up.
-
-### Watch mode
-
-Pass `--watch` / `-w` on the root command or any provider subcommand to refresh
-the view every 60 seconds until you hit Ctrl+C (or `q`). In a terminal a
-pulsating status line shows the countdown to the next refresh; press **`r`** to
-refresh immediately, or **`q`** (or Ctrl+C) to close. The previous frame is
-cleared before each redraw. With `--json` / `--yaml` each tick emits a new
-document (no status line).
-
-### Machine-readable output
-
-Add `--json` or `--yaml` (alias `--yml`) to any command. The aggregate view
-keys the object by provider.
-
-```
-$ aiquokka grok --yml
-provider: Grok
-plan: XPremium
-windows:
-  - label: Weekly
-    used_percent: 0
-    resets_at: 2026-07-25T07:05:43.476608Z
-extra:
-  - label: Grok Code
-    value: "yes"
-```
-
-## The pace marker
-
-Bars fill with **remaining** quota (`█` remaining, dim `░` already used).
-`--json` / `--yaml` still report `used_percent`.
-
-Every bar carries a bright-cyan marker at the remaining amount **even, linear
-usage** would leave you with right now. If the filled (remaining) bar extends
-past the marker you have headroom; if it falls short of the marker you are
-burning faster than the window.
-
-```
-  Weekly   [█▒░░░░░░░░░░░░░░░░░░░░░░]   6.0% left  ← short of marker: over pace
-  5h       [████████████████████▒░░░]  84.0% left  ← past the marker: plenty left
-```
-
-`aiquokka --help` repeats this legend. Cursor's `displayMessage` is omitted
-when a billing percentage is present (it often describes a different cap);
-`AIQUOKKA_DEBUG=1` prints it as `⚠ Provider`.
-
-## How it works
-
-aiquokka reuses the credentials each official CLI already stores on your
-machine and queries the same usage endpoint that CLI uses.
-
-| Command | Credentials | Endpoint |
+| 命令 | 查询内容 | 凭据来源 |
 | --- | --- | --- |
-| `claude` | `~/.claude/.credentials.json`, or macOS Keychain (OAuth) | `api.anthropic.com/api/oauth/usage` |
-| `codex`  | `~/.codex/auth.json` (ChatGPT OAuth) | `chatgpt.com/backend-api/wham/usage` |
-| `cursor` | Cursor Agent `auth.json`, OS credential store, or Desktop `state.vscdb` | Cursor Dashboard API (`api2.cursor.sh`) |
-| `kimi`   | `~/.kimi-code` / `~/.kimi` OAuth, or `$KIMI_API_KEY` | `api.kimi.com/coding/v1/usages` |
-| `grok`   | `~/.grok/auth.json` (xAI OIDC) | `cli-chat-proxy.grok.com/v1/billing?format=credits` |
-| `copilot`| `~/.config/github-copilot/{apps,hosts}.json` | `api.github.com/copilot_internal/user` |
-| `deepseek` | `$DEEPSEEK_API_KEY` | `api.deepseek.com/user/balance` |
-| `kiro`   | Kiro CLI credential store (via `kiro-cli /usage`) | `q.<region>.amazonaws.com/getUsageLimits` |
-| `agy`    | `~/.gemini/antigravity-cli/antigravity-oauth-token` | `daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota` |
-| `zai`    | `$ZAI_API_KEY`, or the zai provider in `~/.pi/agent/models.json` | `api.z.ai/api/biz/tokenAccounts/list/my`, `api.z.ai/api/biz/account/query-customer-account-report` |
-| `openrouter` | `$OPENROUTER_MANAGEMENT_KEY` | `openrouter.ai/api/v1/credits` |
+| `claude` | 5 小时、每周及 Weekly Fable 额度 | `~/.claude/.credentials.json`，或 macOS Keychain |
+| `codex` | 5 小时 / 每周额度、重置次数与到期明细 | `~/.codex/auth.json` |
+| `cursor` | 当前账期额度、Auto / API 使用率及按量消费信息 | Cursor Agent 登录文件、系统凭据存储，或 Desktop 的 `state.vscdb` |
+| `kimi` | Kimi Code 的 5 小时及每周额度 | `~/.kimi-code` / `~/.kimi` 中的 OAuth 凭据，或 `KIMI_API_KEY` |
+| `grok` | 周期额度、订阅等级与 Grok Code 状态 | `~/.grok/auth.json` |
+| `copilot` | Premium、Chat、Completions 额度 | GitHub Copilot 配置目录中的 `apps.json` / `hosts.json` |
+| `deepseek` | 余额、赠送余额与充值余额 | `DEEPSEEK_API_KEY` |
+| `kiro` | 月度积分、套餐、重置日期与超额状态 | 调用已安装的 `kiro-cli /usage`，由官方 CLI 管理凭据 |
+| `antigravity`（别名 `agy`） | Antigravity 配额 | `~/.gemini/antigravity-cli/antigravity-oauth-token` |
+| `zai` | 预付费资源包与现金余额 | `ZAI_API_KEY`，或 `~/.pi/agent/models.json` 中的 zai 配置 |
+| `openrouter` | 账户余额、累计额度与已消费金额 | `OPENROUTER_MANAGEMENT_KEY` |
 
-OpenRouter balance checks require a [Management API key](https://openrouter.ai/docs/guides/overview/auth/management-api-keys); a regular inference API key cannot access the account-credit endpoint.
+各服务只展示接口实际返回的数据，具体窗口和字段取决于账户与套餐。直接指定未配置的 Provider 会显示配置提示。
 
-aiquokka defaults to `auto`: it reads credentials normally, and silently
-refreshes only when a provider explicitly supports a safe recovery path. For
-rotating refresh tokens this means an atomic persisted refresh. Official CLIs
-continue to own identity; use `readonly` to guarantee aiquokka never changes a
-credential store.
-
-### Choose a credential refresh policy
-
-Use the global `--credential-policy` flag when a provider needs to refresh an
-expired credential. It applies to every provider in that invocation; it does
-not change how aiquokka discovers credentials or switch accounts.
+API Key 配置示例（sh / bash / zsh）：
 
 ```sh
-# Default: safely refresh supported credentials and persist rotated tokens.
-aiquokka codex
-
-# Never refresh or write credentials. Re-authenticate with the official CLI if needed.
-aiquokka --credential-policy readonly
-
-# Refresh an expired credential and write the result back, where supported.
-aiquokka --credential-policy persist codex
-aiquokka --credential-policy persist
+export DEEPSEEK_API_KEY="你的 DeepSeek API Key"
+export OPENROUTER_MANAGEMENT_KEY="你的 OpenRouter Management API Key"
+aiquokka
 ```
 
-| Policy | Behaviour |
+OpenRouter 必须使用 **Management API Key**，普通推理 API Key 无法查询账户额度。余额按接口返回的 `total_credits - total_usage` 计算，以美元显示。
+
+Z.ai 中国平台可设置 `ZAI_BASE_URL=https://open.bigmodel.cn/api`，余额以人民币显示。资源包按模型适用范围分别展示，可通过 `Applies to` 字段查看。
+
+### 如何阅读额度
+
+- 实心 `█` 表示剩余额度，灰色 `░` 表示已用额度，`left` 是剩余百分比。
+- 剩余超过 40% 为绿色，15%–40% 为黄色，低于 15% 为红色。
+- 青色标记表示按当前周期匀速消耗时，理论上应剩余的位置。剩余条超过标记表示消耗较慢，短于标记表示消耗较快；需要已知周期信息才会显示。
+- 重置时间同时显示相对倒计时和本地时间。
+- DeepSeek 与 OpenRouter 直接显示金额，不推算剩余百分比。
+
+Cursor 有额度百分比时，默认隐藏可能与该额度含义冲突的 Provider 提示。需要排查时可启用调试信息：
+
+```sh
+AIQUOKKA_DEBUG=1 aiquokka cursor
+```
+
+### JSON / YAML 输出
+
+```sh
+aiquokka --json
+aiquokka codex --yaml
+aiquokka cursor --yml       # --yaml 的别名
+aiquokka --watch --json     # 每次刷新输出一个新的 JSON 文档
+```
+
+聚合输出以 Provider 名称的小写形式为键，未配置的服务省略，查询失败的服务包含 `error` 字段。JSON 与 YAML 输出选项互斥。
+
+结构化输出中的 `used_percent` 仍表示**已用百分比**，与终端显示的 `left` 含义不同。Watch 模式会连续输出多个文档，读取脚本需要逐次处理。
+
+## 凭据策略与认证恢复
+
+默认策略为 `auto`：凭据正常时直接读取；过期时使用 Provider 声明支持的恢复方式。Claude、Codex、Cursor、Grok 支持刷新并持久化新凭据。刷新令牌可能轮换，因此刷新后需要安全写回，避免丢弃新令牌。
+
+```sh
+aiquokka codex                              # 默认 auto
+aiquokka --credential-policy readonly       # aiquokka 不刷新或写回凭据
+aiquokka --credential-policy persist codex   # 显式使用刷新并写回策略
+```
+
+| 策略 | 行为 |
 | --- | --- |
-| `auto` | Default. Uses the provider's safe refresh mechanism; if refresh can no longer continue, asks for official-CLI sign-in. |
-| `readonly` | Never refreshes or writes credentials; re-login with the official CLI when they expire. |
-| `memory` | Refreshes only in the running process and never writes the result. It is rejected when a provider cannot safely support it. |
-| `persist` | Refreshes and atomically writes updated credentials, but only for providers that explicitly support it. |
+| `auto` | 默认；按 Provider 能力选择安全恢复方式，无法恢复时提示通过官方 CLI 登录 |
+| `readonly` | aiquokka 不刷新或写回凭据；Kiro 的查询仍由官方 CLI 执行，其凭据由官方 CLI 管理 |
+| `memory` | 仅在进程内刷新，不写回；当前所有 Provider 均不支持，使用时会报错 |
+| `persist` | 在需要时刷新并安全写回；目前仅 Claude、Codex、Cursor、Grok 支持 |
 
-`memory` is currently unsupported by all providers because their refresh
-tokens may rotate. `persist` is currently supported for Claude, Codex, Cursor,
-and Grok. For all other providers, use `readonly` and let their official CLI
-manage authentication. An unsupported policy fails clearly rather than falling
-back silently.
+策略对本次调用的所有 Provider 生效，不用于切换账号。不支持的策略会明确报错。
 
-### Claude Code on macOS
+Codex / Grok 的静默刷新成功后，原查询最多重试一次。如果需要重新登录，只有在**单独查询该 Provider、输入输出均为交互终端、非 watch、非 JSON / YAML、非 CI** 时，才可能自动运行 `codex login` 或 `grok login`，成功后重新查询。聚合查询和脚本环境会显示登录提示。
 
-Claude Code stores its OAuth credential in `~/.claude/.credentials.json` or,
-on macOS, the Keychain. Aiquokka prefers the credentials file when it contains
-an OAuth access token. Otherwise it reads the `Claude Code-credentials`
-item through the macOS `security` tool (the same helper Claude Code uses to
-write it), which avoids a Keychain permission dialog for the aiquokka binary.
-Over SSH, unlock the login Keychain first with `security unlock-keychain`.
-If a permission dialog still cannot be confirmed remotely, aiquokka times
-out the Keychain read instead of hanging. When a refresh is required, it
-updates that same item while preserving fields it does not own. If several
-matching items exist, it prefers the current user's. This storage format is
-an implementation detail of Claude Code and may change without notice.
+macOS 上，Claude 优先读取包含 OAuth access token 的凭据文件，否则通过系统 `security` 工具读取 Keychain。通过 SSH 使用时，如钥匙串被锁定，可先执行 `security unlock-keychain`。
 
-Per-provider notes:
+## 注意事项
 
-- **Codex** reports a weekly window plus your remaining *reset credits* ("amount
-  of resets").
-- **Cursor** discovers complete credential pairs from Cursor Agent, the OS
-  credential store, or Cursor Desktop; it queries Cursor's Dashboard API for
-  the current billing-cycle usage.
-- **Kimi** limits are only on the Kimi Code coding subscription; the OAuth token
-  is auto-detected from the CLI, or set `KIMI_API_KEY` to an `sk-kimi-…` key.
-- **Grok** reports the weekly usage-limit window (the same figure the Grok CLI's
-  `/usage` shows), plus subscription tier and Grok Code access. xAI rotates
-  refresh tokens, so if both `grok` and `aiquokka` refresh the most recent one
-  wins; a "run grok to re-login" message means the stored token was superseded.
-- **Copilot** fetches usage across Chat, Completions, and Premium Interactions based on the IDE or GitHub CLI stored credential.
-- **DeepSeek** reads `DEEPSEEK_API_KEY` (sk-…) and reports the account balance. The balance is money, not a usage limit, so the bar is full while any balance remains and empties at zero — the amount is the number that matters. The granted and topped-up portions are shown beneath it.
-- **Kiro** runs the installed CLI’s built-in `/usage` command non-interactively, so Kiro retains ownership of credentials and token refresh. It reports monthly credits, plan, reset date, and overage status.
-- **Antigravity** reads the OAuth token stored in `~/.gemini/antigravity-cli/antigravity-oauth-token` and impersonates the CLI's first-party OAuth client to access the restricted quota endpoint.
-- **Z.ai** reports the prepaid usage bundles (resource packages) as used/total token bars plus the pay-as-you-go cash balance. Bundles are model-specific — a bundle for `glm-5.3` stays untouched while requests to `glm-5.3-flash` burn cash — so check the "Applies to" fact if your cash drains faster than expected. The key is the Zhipu `{id}.{secret}` form; it is turned into a signed JWT locally. On the China platform, set `ZAI_BASE_URL=https://open.bigmodel.cn/api` (balance is then shown as CNY).
+部分查询依赖官方客户端使用的未公开接口或本地凭据格式，可能随服务更新而失效。建议使用内置的 60 秒 watch 间隔，避免叠加多个监控进程或高频轮询导致限流。
 
-## Caveats
+## 来源与许可
 
-These are all **undocumented** endpoints used by the respective official CLIs;
-they may change without notice. Please don't poll them aggressively — Claude's
-endpoint in particular rate-limits hard. `--watch` refreshes every 60 seconds,
-which is the floor you should use; avoid stacking extra watchers or shorter
-custom loops on top of it.
+感谢上游 [McKean/aiquokka](https://github.com/McKean/aiquokka) 提供基础实现。本 fork 在此基础上持续改进 Provider 支持、额度展示与凭据恢复。
 
-## License
-
-[MIT](LICENSE)
+采用 [MIT License](LICENSE)。
