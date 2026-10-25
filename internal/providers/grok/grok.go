@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/httpx"
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/httpx"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 // baseURL is the Grok CLI chat proxy (override via GROK_CLI_CHAT_PROXY_BASE_URL).

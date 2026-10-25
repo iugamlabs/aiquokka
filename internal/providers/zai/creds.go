@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 // loadKey returns the Z.ai API key, trying $ZAI_API_KEY first and then the

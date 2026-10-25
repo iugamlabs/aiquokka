@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/star-plan/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/credential"
 )
 
 var agentAuthPath = defaultAgentAuthPath

@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 // loadKey reads the Management API key. Regular OpenRouter API keys cannot

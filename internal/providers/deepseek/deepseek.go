@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/star-plan/aiquokka/internal/httpx"
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/httpx"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 // baseURL returns the DeepSeek API base URL (override via DEEPSEEK_BASE_URL).

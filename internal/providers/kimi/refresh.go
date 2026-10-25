@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/httpx"
+	"github.com/iugamlabs/aiquokka/internal/httpx"
 )
 
 // Kimi Code's OAuth device-flow token endpoint and public client id (extracted

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/credential"
 )
 
 func TestParseUsage(t *testing.T) {

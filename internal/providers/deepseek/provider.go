@@ -3,7 +3,7 @@ package deepseek
 import (
 	"context"
 
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 // Provider adapts the DeepSeek fetcher to the shared provider.Provider contract.

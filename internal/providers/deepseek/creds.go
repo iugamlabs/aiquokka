@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 // loadKey returns the DeepSeek API key from the environment. DeepSeek has no

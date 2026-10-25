@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/star-plan/aiquokka/internal/buildinfo"
+	"github.com/iugamlabs/aiquokka/internal/buildinfo"
 )
 
 func TestVersionOutput(t *testing.T) {

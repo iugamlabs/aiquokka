@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/httpx"
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/httpx"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 // usageEndpoint is Claude Code's undocumented subscription-usage endpoint.

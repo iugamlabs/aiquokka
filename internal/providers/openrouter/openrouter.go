@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/star-plan/aiquokka/internal/httpx"
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/httpx"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 // baseURL returns the OpenRouter API host (override via OPENROUTER_BASE_URL).

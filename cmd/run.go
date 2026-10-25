@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/credential"
-	"github.com/star-plan/aiquokka/internal/provider"
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/provider"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 	"gopkg.in/yaml.v3"
 )
 

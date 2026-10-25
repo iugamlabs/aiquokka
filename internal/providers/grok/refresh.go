@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/credential"
-	"github.com/star-plan/aiquokka/internal/httpx"
+	"github.com/iugamlabs/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/httpx"
 )
 
 // tokenEndpoint derives the OIDC token endpoint from the issuer (auth.x.ai for

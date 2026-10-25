@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 func TestReportFromCredits(t *testing.T) {

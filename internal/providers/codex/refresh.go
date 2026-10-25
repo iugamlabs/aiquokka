@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/credential"
-	"github.com/star-plan/aiquokka/internal/httpx"
+	"github.com/iugamlabs/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/httpx"
 )
 
 // refreshEndpoint and codexClientID are Codex CLI's OAuth values.

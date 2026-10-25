@@ -14,7 +14,7 @@ builds:
     goarch: [amd64, arm64]
     env: [CGO_ENABLED=0]
     ldflags:
-      - -s -w -X github.com/star-plan/aiquokka/internal/buildinfo.Version={{ .Version }} -X github.com/star-plan/aiquokka/internal/buildinfo.Commit={{ .Commit }} -X github.com/star-plan/aiquokka/internal/buildinfo.Date={{ .Date }}
+      - -s -w -X github.com/iugamlabs/aiquokka/internal/buildinfo.Version={{ .Version }} -X github.com/iugamlabs/aiquokka/internal/buildinfo.Commit={{ .Commit }} -X github.com/iugamlabs/aiquokka/internal/buildinfo.Date={{ .Date }}
   - id: macos
     main: .
     binary: aiquokka-macos-{{ .Arch }}
@@ -22,7 +22,7 @@ builds:
     goarch: [amd64, arm64]
     env: [CGO_ENABLED=0]
     ldflags:
-      - -s -w -X github.com/star-plan/aiquokka/internal/buildinfo.Version={{ .Version }} -X github.com/star-plan/aiquokka/internal/buildinfo.Commit={{ .Commit }} -X github.com/star-plan/aiquokka/internal/buildinfo.Date={{ .Date }}
+      - -s -w -X github.com/iugamlabs/aiquokka/internal/buildinfo.Version={{ .Version }} -X github.com/iugamlabs/aiquokka/internal/buildinfo.Commit={{ .Commit }} -X github.com/iugamlabs/aiquokka/internal/buildinfo.Date={{ .Date }}
   - id: linux
     main: .
     binary: aiquokka-linux-{{ .Arch }}
@@ -30,7 +30,7 @@ builds:
     goarch: [amd64, arm64]
     env: [CGO_ENABLED=0]
     ldflags:
-      - -s -w -X github.com/star-plan/aiquokka/internal/buildinfo.Version={{ .Version }} -X github.com/star-plan/aiquokka/internal/buildinfo.Commit={{ .Commit }} -X github.com/star-plan/aiquokka/internal/buildinfo.Date={{ .Date }}
+      - -s -w -X github.com/iugamlabs/aiquokka/internal/buildinfo.Version={{ .Version }} -X github.com/iugamlabs/aiquokka/internal/buildinfo.Commit={{ .Commit }} -X github.com/iugamlabs/aiquokka/internal/buildinfo.Date={{ .Date }}
 
 archives:
   - id: binaries
@@ -45,29 +45,29 @@ changelog:
 
 release:
   github:
-    owner: star-plan
+    owner: iugamlabs
     name: aiquokka
   header: |
     ## aiquokka v{{ .Version }}
 
-    First star-plan release of aiquokka.
+    AI quota monitoring with fork-specific credential and display improvements.
 
     ### Highlights
 
     - Unified quota monitoring for Claude, Codex, Cursor, Grok, and more
     - Cursor credential discovery for Agent and Desktop installations
     - Remaining-quota bars, JSON/YAML output, and live watch mode
-    - Read-only credential handling by default
+    - Automatic credential recovery with an explicit read-only option
     - Windows, macOS, and Linux binaries
 
     ### Installation
 
     Homebrew:
 
-        brew tap star-plan/tap
+        brew tap iugamlabs/tap
         brew install aiquokka
 
     Scoop:
 
-        scoop bucket add star-plan https://github.com/star-plan/scoop
+        scoop bucket add iugamlabs https://github.com/iugamlabs/scoop
         scoop install aiquokka

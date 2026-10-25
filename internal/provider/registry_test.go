@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 type stub struct {

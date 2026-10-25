@@ -3,8 +3,8 @@ package codex
 import (
 	"context"
 
-	"github.com/star-plan/aiquokka/internal/credential"
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 // Provider adapts the Codex fetcher to the shared provider.Provider contract.

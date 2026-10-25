@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 type quotaResponse struct {

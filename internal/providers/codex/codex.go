@@ -9,8 +9,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/star-plan/aiquokka/internal/httpx"
-	"github.com/star-plan/aiquokka/internal/usage"
+	"github.com/iugamlabs/aiquokka/internal/httpx"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 // usageEndpoint is the ChatGPT backend on-demand usage endpoint (the same data

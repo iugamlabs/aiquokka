@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/star-plan/aiquokka/internal/buildinfo"
-	"github.com/star-plan/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/buildinfo"
+	"github.com/iugamlabs/aiquokka/internal/credential"
 )
 
 // Global output-format flags: emit raw structured output instead of the

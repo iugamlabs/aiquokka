@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/star-plan/aiquokka/cmd"
+	"github.com/iugamlabs/aiquokka/cmd"
 )
 
 func main() {

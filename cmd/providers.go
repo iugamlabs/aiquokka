@@ -5,8 +5,8 @@ import (
 	"io"
 	"text/tabwriter"
 
-	"github.com/star-plan/aiquokka/internal/provider"
-	"github.com/star-plan/aiquokka/internal/providers"
+	"github.com/iugamlabs/aiquokka/internal/provider"
+	"github.com/iugamlabs/aiquokka/internal/providers"
 	"github.com/spf13/cobra"
 )
 

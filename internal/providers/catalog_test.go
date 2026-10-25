@@ -3,8 +3,8 @@ package providers
 import (
 	"testing"
 
-	"github.com/star-plan/aiquokka/internal/credential"
-	"github.com/star-plan/aiquokka/internal/provider"
+	"github.com/iugamlabs/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/provider"
 )
 
 func TestCatalogIDsUniqueAndStable(t *testing.T) {
