@@ -13,13 +13,25 @@ import (
 	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
-// credentialsPath is ~/.claude/.credentials.json.
-func credentialsPath() (string, error) {
+// configDir is $CLAUDE_CONFIG_DIR when set, as Claude Code does, else ~/.claude.
+func configDir() (string, error) {
+	if v := os.Getenv("CLAUDE_CONFIG_DIR"); v != "" {
+		return v, nil
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".claude", ".credentials.json"), nil
+	return filepath.Join(home, ".claude"), nil
+}
+
+// credentialsPath is .credentials.json in the Claude config dir.
+func credentialsPath() (string, error) {
+	dir, err := configDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, ".credentials.json"), nil
 }
 
 // oauth mirrors the claudeAiOauth object in .credentials.json.
