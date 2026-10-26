@@ -70,5 +70,5 @@ release:
 
     Scoop:
 
-        scoop bucket add iugamlabs https://github.com/iugamlabs/scoop
+        scoop bucket add iugam https://github.com/iugamlabs/scoop
         scoop install aiquokka
