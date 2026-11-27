@@ -31,3 +31,14 @@ func TestRunCommandKillsChildrenOnTimeout(t *testing.T) {
 		t.Fatalf("child processes left running after timeout: %s", left)
 	}
 }
+
+func TestRunCommandDetachesControllingTTYAndBlocksBrowser(t *testing.T) {
+	out, err := runCommand(context.Background(), "sh", "-c",
+		`printf '%s|%s|' "$Q_FAKE_IS_REMOTE" "$BROWSER"; if (: < /dev/tty) 2>/dev/null; then printf 'tty'; else printf 'no-tty'; fi`)
+	if err != nil {
+		t.Fatalf("runCommand failed: %v (%s)", err, out)
+	}
+	if got := string(out); got != "1|false|no-tty" {
+		t.Fatalf("got %q, want %q", got, "1|false|no-tty")
+	}
+}

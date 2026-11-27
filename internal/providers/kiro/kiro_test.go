@@ -1,6 +1,7 @@
 package kiro
 
 import (
+	"context"
 	"math"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/iugamlabs/aiquokka/internal/credential"
+	"github.com/iugamlabs/aiquokka/internal/usage"
 )
 
 func TestParseUsage(t *testing.T) {
@@ -108,5 +110,127 @@ func TestChatBinaryFallback(t *testing.T) {
 	}
 	if _, ok := chatBinary(filepath.Join(t.TempDir(), "kiro-cli")); ok {
 		t.Fatal("expected no chat binary next to a missing kiro-cli")
+	}
+}
+
+func TestIsLoginMessage(t *testing.T) {
+	cases := []struct {
+		text string
+		want bool
+	}{
+		{"Not logged in", true},
+		{"You are not logged in. Login now?", true},
+		{"Welcome to Kiro CLI, let's get you signed in!\nPress enter to continue to the browser or esc to cancel", true},
+		{"Login is required to use chat", true},
+		{"Please log in with kiro-cli login", true},
+		{"Logged in with Builder ID", false},
+		{"network timeout", false},
+	}
+	for _, tc := range cases {
+		if got := isLoginMessage(tc.text); got != tc.want {
+			t.Errorf("isLoginMessage(%q) = %v, want %v", tc.text, got, tc.want)
+		}
+	}
+}
+
+func writeFakeKiro(t *testing.T, dir, name, script string) string {
+	t.Helper()
+	p := filepath.Join(dir, name)
+	if err := os.WriteFile(p, []byte("#!/bin/sh\n"+script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func TestFetchSkipsChatWhenLoggedOut(t *testing.T) {
+	dir := t.TempDir()
+	marker := filepath.Join(dir, "chat-called")
+	writeFakeKiro(t, dir, "kiro-cli", `
+if [ "$1" = "whoami" ]; then
+  echo "Not logged in"
+  exit 1
+fi
+touch "`+marker+`"
+echo "Welcome to Kiro CLI, let's get you signed in!"
+exit 1
+`)
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("KIRO_API_KEY", "")
+
+	_, err := Fetch(context.Background())
+	if !usage.IsNotConfigured(err) {
+		t.Fatalf("err = %v, want NotConfigured", err)
+	}
+	if _, statErr := os.Stat(marker); statErr == nil {
+		t.Fatal("kiro-cli chat was invoked even though whoami reported not logged in")
+	}
+}
+
+func TestFetchRunsUsageWhenLoggedIn(t *testing.T) {
+	dir := t.TempDir()
+	writeFakeKiro(t, dir, "kiro-cli", `
+if [ "$1" = "whoami" ]; then
+  echo "Logged in with Builder ID"
+  exit 0
+fi
+if [ "$Q_FAKE_IS_REMOTE" != "1" ] || [ "$BROWSER" != "false" ]; then
+  echo "missing browser-disable env"
+  exit 1
+fi
+echo "Estimated Usage | resets on 09/01 | KIRO PRO"
+echo "Credits (2.5 of 100 covered in plan)"
+`)
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("KIRO_API_KEY", "")
+
+	report, err := Fetch(context.Background())
+	if err != nil {
+		t.Fatalf("Fetch failed: %v", err)
+	}
+	if report.Plan != "KIRO PRO" || len(report.Windows) != 1 {
+		t.Fatalf("unexpected report: %#v", report)
+	}
+}
+
+func TestFetchSkipsWhoamiWhenAPIKeySet(t *testing.T) {
+	dir := t.TempDir()
+	writeFakeKiro(t, dir, "kiro-cli", `
+if [ "$1" = "whoami" ]; then
+  echo "Not logged in"
+  exit 1
+fi
+echo "Estimated Usage | resets on 09/01 | KIRO PRO"
+echo "Credits (1 of 50 included)"
+`)
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("KIRO_API_KEY", "ksk_test")
+
+	report, err := Fetch(context.Background())
+	if err != nil {
+		t.Fatalf("Fetch failed with KIRO_API_KEY: %v", err)
+	}
+	if report.Plan != "KIRO PRO" {
+		t.Fatalf("unexpected report: %#v", report)
+	}
+}
+
+func TestFetchTreatsBrowserLoginFallbackAsNotConfigured(t *testing.T) {
+	dir := t.TempDir()
+	writeFakeKiro(t, dir, "kiro-cli", `
+if [ "$1" = "whoami" ]; then
+  echo "Logged in with Builder ID"
+  exit 0
+fi
+echo "Welcome to Kiro CLI, let's get you signed in!"
+echo "Press enter to continue to the browser or esc to cancel"
+echo "error: No such device or address (os error 6)"
+exit 1
+`)
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("KIRO_API_KEY", "")
+
+	_, err := Fetch(context.Background())
+	if !usage.IsNotConfigured(err) {
+		t.Fatalf("err = %v, want NotConfigured", err)
 	}
 }
