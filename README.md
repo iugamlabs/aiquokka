@@ -155,7 +155,7 @@ Muse queries using file-based login are cached in the process for five minutes. 
 
 After successful silent refresh for Codex / Grok, the original query is retried at most once. If reauthentication is required, `codex login` or `grok login` may run automatically only for a **single-provider query with interactive input and output, outside watch mode, JSON / YAML output, and CI**. A successful login is followed by another query. Aggregate queries and scripts display a sign-in hint.
 
-On macOS, Claude first reads a credentials file containing an OAuth access token, then falls back to Keychain through the system `security` tool. When using SSH, unlock a locked keychain first with `security unlock-keychain` if needed.
+On macOS, Claude prefers a live credentials file, then a live Keychain item via the system `security` tool when the file is missing, unparseable, or expired. The Keychain item is read-only: aiquokka never refreshes or writes it, so it cannot race Claude Code's own refreshes. When using SSH, unlock a locked keychain first with `security unlock-keychain` if needed.
 
 ## Optional desktop tray
 

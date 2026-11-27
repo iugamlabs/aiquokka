@@ -32,9 +32,16 @@ type refreshResponse struct {
 
 // ensureFresh refreshes the OAuth token according to the active credential
 // policy when the access token is expired (or force is set).
+//
+// A Keychain credential is never refreshed here: Claude Code refreshes that
+// same item while sessions run, so a write-back could rotate the token out
+// from under it. An expired one answers as readonly does.
 func ensureFresh(ctx context.Context, o *oauth, force bool) error {
 	if !force && !o.expired(time.Now()) {
 		return nil
+	}
+	if o.source.isKeychain() {
+		return credential.Apply("Claude", credential.ReadOnly, capabilities(), credential.RefreshFuncs{})
 	}
 	policy := credential.PolicyFrom(ctx)
 	return credential.Apply("Claude", policy, capabilities(), credential.RefreshFuncs{
@@ -62,11 +69,11 @@ func refreshInPlace(ctx context.Context, o *oauth) error {
 		"client_id":     {claudeCodeClientID},
 	}
 
-	var lastErr error
+	var errs []string
 	for _, endpoint := range refreshEndpoints {
 		rr, err := doRefresh(ctx, endpoint, form)
 		if err != nil {
-			lastErr = err
+			errs = append(errs, endpoint+": "+err.Error())
 			continue
 		}
 		o.AccessToken = rr.AccessToken
@@ -78,7 +85,7 @@ func refreshInPlace(ctx context.Context, o *oauth) error {
 		}
 		return nil
 	}
-	return fmt.Errorf("refreshing Claude token: %w", lastErr)
+	return fmt.Errorf("refreshing Claude token: %s", strings.Join(errs, "; "))
 }
 
 func doRefresh(ctx context.Context, endpoint string, form url.Values) (*refreshResponse, error) {
@@ -110,22 +117,11 @@ func doRefresh(ctx context.Context, endpoint string, form url.Values) (*refreshR
 }
 
 // persist writes the updated oauth block back into the credentials file,
-// preserving any other keys already present.
-func persist(ctx context.Context, o *oauth) error {
-	if len(o.source.keychainItem) != 0 {
-		data, err := readKeychainItem(ctx, o.source.keychainItem)
-		if err != nil {
-			return err
-		}
-		_, direct, err := parseCredentials(data)
-		if err != nil {
-			return err
-		}
-		data, err = mergeCredentials(data, direct, o)
-		if err != nil {
-			return err
-		}
-		return updateKeychainItem(ctx, o.source.keychainItem, data)
+// preserving any other keys already present. Keychain credentials are
+// read-only: Claude Code refreshes that item itself.
+func persist(_ context.Context, o *oauth) error {
+	if o.source.isKeychain() {
+		return fmt.Errorf("Claude Keychain credentials are read-only — run `claude` to re-login")
 	}
 
 	path, err := credentialsPath()

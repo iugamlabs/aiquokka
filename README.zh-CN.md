@@ -155,7 +155,7 @@ Muse 文件登录查询在进程内缓存五分钟；未报告活动窗口时显
 
 Codex / Grok 的静默刷新成功后，原查询最多重试一次。如果需要重新登录，只有在**单独查询该 Provider、输入输出均为交互终端、非 watch、非 JSON / YAML、非 CI** 时，才可能自动运行 `codex login` 或 `grok login`，成功后重新查询。聚合查询和脚本环境会显示登录提示。
 
-macOS 上，Claude 优先读取包含 OAuth access token 的凭据文件，否则通过系统 `security` 工具读取 Keychain。通过 SSH 使用时，如钥匙串被锁定，可先执行 `security unlock-keychain`。
+macOS 上，Claude 优先使用未过期的凭据文件；文件缺失、无法解析或已过期时，再通过系统 `security` 工具读取仍有效的 Keychain 项。Keychain 项只读：aiquokka 不会刷新或写回，以免与 Claude Code 自己的刷新冲突。通过 SSH 使用时，如钥匙串被锁定，可先执行 `security unlock-keychain`。
 
 ## 可选桌面托盘
 
