@@ -22,5 +22,12 @@ func (*Provider) Fetch(ctx context.Context) (*usage.Report, error) {
 }
 
 func (*Provider) Capabilities() credential.Capabilities {
-	return credential.Capabilities{OfficialCLIRefresh: true}
+	return capabilities()
+}
+
+func capabilities() credential.Capabilities {
+	return credential.Capabilities{
+		RefreshAndPersist:   true,
+		RotatesRefreshToken: true,
+	}
 }

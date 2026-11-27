@@ -81,7 +81,7 @@ Watch 模式下，交互终端会显示下次刷新的倒计时。按 `r` 立即
 | `copilot` | Premium、Chat、Completions 额度 | GitHub Copilot 配置目录中的 `apps.json` / `hosts.json` |
 | `deepseek` | 余额、赠送余额与充值余额 | `DEEPSEEK_API_KEY` |
 | `kiro` | 月度积分、套餐、重置日期与超额状态 | 调用已安装的 `kiro-cli /usage`，由官方 CLI 管理凭据 |
-| `antigravity`（别名 `agy`） | Antigravity 配额 | 调用已登录的官方 `agy -p /usage --output-format json` |
+| `antigravity`（别名 `agy`） | Antigravity 配额、套餐与账户邮箱 | `agy` 的系统钥匙串（`gemini` / `antigravity`），或 `~/.gemini/antigravity-cli/antigravity-oauth-token`（`$ANTIGRAVITY_TOKEN_PATH`） |
 | `zai` | 预付费资源包与现金余额 | `ZAI_API_KEY`，或 `~/.pi/agent/models.json` 中的 zai 配置 |
 | `openrouter` | 账户余额、累计额度与已消费金额 | `OPENROUTER_MANAGEMENT_KEY` |
 | `muse` | 5 小时及每周订阅额度 | `MUSE_AUTH_PATH` 或 `$XDG_CONFIG_HOME/muse/auth.json`（默认 `~/.config/muse/auth.json`）；缺少内联令牌时调用 `muse serve` |
@@ -145,9 +145,9 @@ aiquokka --credential-policy persist codex   # 显式使用刷新并写回策略
 | 策略 | 行为 |
 | --- | --- |
 | `auto` | 默认；按 Provider 能力选择安全恢复方式，无法恢复时提示通过官方 CLI 登录 |
-| `readonly` | aiquokka 不刷新或写回凭据；Kiro、Antigravity 和 Muse CLI 查询仍由官方客户端管理自己的凭据 |
+| `readonly` | aiquokka 不刷新或写回凭据；Kiro 和 Muse CLI 查询仍由官方客户端管理自己的凭据 |
 | `memory` | 仅在进程内刷新，不写回；当前所有 Provider 均不支持，使用时会报错 |
-| `persist` | 在需要时刷新并安全写回；目前仅 Claude、Codex、Cursor、Grok、Kimi 支持 |
+| `persist` | 在需要时刷新并安全写回；目前 Claude、Codex、Cursor、Grok、Kimi、Antigravity 支持 |
 
 策略对本次调用的所有 Provider 生效，不用于切换账号。不支持的策略会明确报错。`--no-refresh` 可与显式 `readonly` 同用，与显式 `auto` / `memory` / `persist` 同用时报参数冲突。
 

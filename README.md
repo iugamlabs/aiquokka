@@ -81,7 +81,7 @@ In watch mode, an interactive terminal shows a countdown to the next refresh. Pr
 | `copilot` | Premium, Chat, and Completions quotas | `apps.json` / `hosts.json` in the GitHub Copilot configuration directory |
 | `deepseek` | Total, granted, and topped-up balances | `DEEPSEEK_API_KEY` |
 | `kiro` | Monthly credits, plan, reset date, and overage status | Invokes the installed `kiro-cli /usage`; the official CLI manages credentials |
-| `antigravity` (alias `agy`) | Antigravity quotas | Invokes the authenticated official CLI with `agy -p /usage --output-format json` |
+| `antigravity` (alias `agy`) | Antigravity quotas, plan, and account email | `agy` OS keyring (`gemini` / `antigravity`) or `~/.gemini/antigravity-cli/antigravity-oauth-token` (`$ANTIGRAVITY_TOKEN_PATH`) |
 | `zai` | Prepaid resource packages and cash balance | `ZAI_API_KEY`, or the zai configuration in `~/.pi/agent/models.json` |
 | `openrouter` | Account balance, total credits, and spending | `OPENROUTER_MANAGEMENT_KEY` |
 | `muse` | 5-hour and weekly subscription quotas | `MUSE_AUTH_PATH` or `$XDG_CONFIG_HOME/muse/auth.json` (default: `~/.config/muse/auth.json`); invokes `muse serve` if no inline token is available |
@@ -145,9 +145,9 @@ aiquokka --credential-policy persist codex   # Explicitly select refresh and per
 | Policy | Behavior |
 | --- | --- |
 | `auto` | Default; select safe recovery based on provider capabilities, or ask for official CLI sign-in if recovery fails |
-| `readonly` | aiquokka does not refresh or persist credentials; Kiro, Antigravity, and Muse CLI queries still let official clients manage their own credentials |
+| `readonly` | aiquokka does not refresh or persist credentials; Kiro and Muse CLI queries still let official clients manage their own credentials |
 | `memory` | Refresh only in memory without saving; currently unsupported by all providers and returns an error |
-| `persist` | Refresh and safely persist credentials when needed; currently supported only by Claude, Codex, Cursor, Grok, and Kimi |
+| `persist` | Refresh and safely persist credentials when needed; currently supported by Claude, Codex, Cursor, Grok, Kimi, and Antigravity |
 
 The policy applies to all providers in the invocation and does not switch accounts. Unsupported policies return an explicit error. `--no-refresh` can be combined with explicit `readonly`, but conflicts with explicit `auto` / `memory` / `persist`.
 
