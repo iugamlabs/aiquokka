@@ -45,7 +45,13 @@ scoop install aiquokka
 go install github.com/iugamlabs/aiquokka@latest
 ```
 
-也可以从 [Releases](https://github.com/iugamlabs/aiquokka/releases) 下载对应平台的二进制，或在源码目录构建：
+也可以从 [Releases](https://github.com/iugamlabs/aiquokka/releases) 下载对应平台的二进制，或用下面的脚本安装最新 Linux / macOS CLI：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/iugamlabs/aiquokka/main/install.sh | sh
+```
+
+脚本会校验 `SHA256SUMS` 并安装到 `~/.local/bin`。可用 `AIQUOKKA_VERSION` 固定版本，或用 `INSTALL_DIR` 指定目录。Windows 继续使用 Scoop。在源码目录构建：
 
 ```sh
 go build -o aiquokka .

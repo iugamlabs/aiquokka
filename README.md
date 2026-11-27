@@ -45,7 +45,13 @@ Requires Go 1.26.5 or later; see [go.mod](go.mod) for the version requirement.
 go install github.com/iugamlabs/aiquokka@latest
 ```
 
-You can also download a binary for your platform from [Releases](https://github.com/iugamlabs/aiquokka/releases), or build from the source directory:
+You can also download a binary for your platform from [Releases](https://github.com/iugamlabs/aiquokka/releases), or install the latest Linux / macOS CLI with:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/iugamlabs/aiquokka/main/install.sh | sh
+```
+
+The script verifies `SHA256SUMS` and installs into `~/.local/bin`. Pin a tag with `AIQUOKKA_VERSION`, or change the destination with `INSTALL_DIR`. Windows continues to use Scoop. To build from the source directory:
 
 ```sh
 go build -o aiquokka .
