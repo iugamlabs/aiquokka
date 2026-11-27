@@ -4,15 +4,16 @@
 
 ## 本次同步基线
 
-- 检查日期：2026-10-25。
-- fork：`https://github.com/iugamlabs/aiquokka`；Go module 同名。本地 `origin` 已由旧 `star-plan` 地址改为 `git@github.com:iugamlabs/aiquokka.git`。
+- 检查日期：2026-11-27。
+- fork：`https://github.com/iugamlabs/aiquokka`；Go module 同名。本地 `origin` 为 `git@github.com:iugamlabs/aiquokka.git`。
 - upstream：`https://github.com/McKean/aiquokka.git`，本地远程名 `upstream`。
-- 同步前 fork：`698c6e73324afaa940092fa76c2a57d72735e871`。
-- 双方共同祖先：`def6ca814d8da68aa36394a189c1bd2d918d3357`（2026-08-28）。
-- **已处理到的上游 SHA：`66ec5c129bdaba55d5ee2b14f1e8c2b54fe3c4cd`**（2026-10-23）；本次处理共同祖先之后的 22 个上游提交。
+- 同步前 fork：`7f88b76cbb262e4cd12b271a0d79a5f129f01754`。
+- 双方共同祖先仍是 `def6ca814d8da68aa36394a189c1bd2d918d3357`（2026-08-28）；分类移植不推进 merge 祖先。
+- 上一轮同步终点：`66ec5c129bdaba55d5ee2b14f1e8c2b54fe3c4cd`（2026-10-23）。
+- **已处理到的上游 SHA：`d722b24268a8f1ff9d779cd201f719897597b983`**（2026-11-22）；本轮处理该 SHA 相对上一轮终点的 7 个上游提交。
 - 采用按功能分类移植，提交正文以 `Upstream-Commit` 记录来源。没有创建 upstream merge，也没有推送、打标签或发布。
 
-分类移植不会推进 Git 的 merge 祖先。GitHub 可能仍显示这 22 个提交未合并，这是预期结果。下次同步使用上面记录的上游 SHA 作为起点，不能再次仅以 `git merge-base` 推断待处理范围。
+分类移植不会推进 Git 的 merge 祖先。GitHub 可能仍显示这些提交未合并，这是预期结果。下次同步使用上面记录的上游 SHA 作为起点，不能再次仅以 `git merge-base` 推断待处理范围。
 
 ## fork 规则与架构映射
 
@@ -21,7 +22,7 @@
 1. Provider 实现统一放在 `internal/providers/<id>`，实现共享接口，通过 `catalog.go` 显式注册一次。子命令、聚合、列表、托盘读取同一 Registry；禁止 `init()` 自注册、扫描目录注册或重复 Provider 清单。
 2. 默认凭据策略为 `auto`。旧重构方案中的默认 `readonly` 已被 [自动恢复规范](changes/2026-09-12-credential-auto-recovery-optimize.md) 替代；`readonly` 仍是显式选项。
 3. 所有命令入口先验证 Policy / Capabilities。刷新和重新登录分开；轮换令牌不能只在内存刷新，持久化使用原子写入并保留其他字段、账户及凭据来源。Grok 保留官方兼容的文件锁，并合并同一次查询中的并发刷新。
-4. `--no-refresh` 使用现有 `readonly` 策略，不另建 refresh context。可与显式 `readonly` 同用，与显式其他策略冲突。Kiro / Antigravity / Muse CLI 查询由官方客户端管理其凭据，这不等于禁止客户端自行刷新。
+4. `--no-refresh` 使用现有 `readonly` 策略，不另建 refresh context。可与显式 `readonly` 同用，与显式其他策略冲突。Kiro / Muse CLI 查询由官方客户端管理其凭据，这不等于禁止客户端自行刷新。Antigravity 由 aiquokka 读取 OAuth 并按策略刷新写回，不再调用 `agy -p /usage`。
 5. 官方交互登录仅允许现有 Codex / Grok 单 Provider、双 TTY、非 watch、非结构化输出且非 CI 的路径；托盘、聚合及脚本不得启动交互登录。
 6. 终端和托盘以剩余额度展示：`left = 100 - used_percent`。告警按已用比例触发；节奏标记仍基于原始 `Pace`。缺少权威百分比保持未知，尤其不能根据 Cursor 的消费金额猜额度。
 7. 保留 Cursor 的凭据来源绑定、Codex 完整 `reset_credits`、DeepSeek / OpenRouter 事实式金额展示。不得用上游序列化或渲染代码覆盖这些 fork 能力。
@@ -32,6 +33,9 @@
 | `internal/<provider>` | `internal/providers/<provider>`，通过 `New()` 适配共享接口 |
 | `cmd/<provider>.go`、旧 `allProviders` 切片 | 由 Registry 生成子命令和聚合列表，不恢复旧文件 |
 | `usage.WithoutRefresh` | `credential.WithPolicy(..., ReadOnly)`，统一入口处理兼容参数 |
+| 上游 `agy -p /usage` CLI | CloudCode HTTP + keyring/file；Capabilities 为 `RefreshAndPersist` + `RotatesRefreshToken` |
+| 上游 Claude 写回 Keychain | Keychain 只读；过期文件优先使用仍有效的 Keychain 项 |
+| 上游 `install.sh` 的 tar.gz / `checksums.txt` | 适配 GoReleaser 裸二进制 `aiquokka-{linux,macos}-$arch` 与 `SHA256SUMS` |
 | 上游 Report / Window 序列化 | 复用字段语义，显式保留 fork 的 `ResetCredits` |
 | 上游托盘直接读取旧 Provider 类型 | 使用 `[]provider.Provider`、Registry ID / 别名解析和统一 fetch |
 | `replace fyne.io/systray => ./third_party/systray` | 内部包 `third_party/systray`；不保留相对 replace，避免破坏 `go install ...@latest` |
@@ -46,6 +50,9 @@
 - 退出码为成功 `0`、未配置／未登录 `3`、其他失败 `1`。只读下令牌过期属于失败，不冒充“未配置”。聚合仍通过各 Provider 的结果／错误表达局部失败。
 - Grok 的用户信息、Z.ai 的现金余额仍为 best-effort。批量和结构化输出约 15 秒后返回已有结果并取消迟到工作；不能让一个无响应 Provider 阻止全部输出。
 - Muse 的无活动窗口不是 0% 用量。文件登录路径按登录令牌区分五分钟缓存；无内联令牌时委托 `muse serve`，不恢复旧 Keychain 读取或权限提示方案。
+- Claude 优先使用未过期的凭据文件；文件缺失、无法解析或已过期时再读 Keychain。Keychain 项只读，过期时按 `readonly` 处理，不刷新、不写回。
+- Antigravity 从 `agy` 钥匙串或 token 文件读取 OAuth，按策略刷新并原子写回；窗口标签仍为 Weekly / 5h，`used_percent` 仍是已用比例。账户仅输出 email。
+- Kiro 在调用 `chat` 前先 `whoami`（`KIRO_API_KEY` 除外），并设置 `Q_FAKE_IS_REMOTE=1`、`BROWSER=false`；Unix 用 `Setsid` 拆掉控制终端，避免弹出浏览器登录。
 
 ## 分类提交及上游映射
 
@@ -61,8 +68,12 @@
 | 6 | `4bf5573` | `feat(muse): add subscription quota provider` |
 | 7 | `b780cae` | `feat(tray): add optional tray app using fork architecture` |
 | 8 | `d04f927` | `build(tray): add isolated desktop build and release targets` |
+| 9 | `49d6190` | `fix(claude): prefer live credential and never refresh Keychain` |
+| 10 | `25d00b5` | `fix(kiro): disable interactive browser login fallback` |
+| 11 | `8b19b97` | `feat(antigravity): read CloudCode quota with OAuth and keyring` |
+| 12 | `f0b2a47` | `feat(install): add one-line install script for published releases` |
 
-每个适配提交携带对应测试。补充的原子写入失败、批量 JSON 超时、缓存切换账户测试已分别归入凭据、性能、Muse 提交。
+每个适配提交携带对应测试。补充的原子写入失败、批量 JSON 超时、缓存切换账户测试已分别归入凭据、性能、Muse 提交。本轮新增的 Keychain 只读、Kiro 登录探测、Antigravity OAuth 与安装脚本测试随对应分类提交。
 
 | 上游提交 | 变化 | fork 提交／处理结果 |
 | --- | --- | --- |
@@ -87,7 +98,14 @@
 | [`430ceeb`](https://github.com/McKean/aiquokka/commit/430ceeb) | 空 windows 为数组 | `5155a72`；保留 Extra 和 ResetCredits 的 JSON 序列化 |
 | [`a0974df`](https://github.com/McKean/aiquokka/commit/a0974df) | 窗口 model 字段 | `5155a72`；保留 Weekly Fable 模型信息 |
 | [`87b658c`](https://github.com/McKean/aiquokka/commit/87b658c) | Z.ai 资源包 model 字段 | `5155a72`；保留资源包／现金窗口差异 |
-| [`66ec5c1`](https://github.com/McKean/aiquokka/commit/66ec5c1) | target 缓冲语义 | `5155a72`；最终 10–90 目标，上游同步终点 |
+| [`66ec5c1`](https://github.com/McKean/aiquokka/commit/66ec5c1) | target 缓冲语义 | `5155a72`；最终 10–90 目标，上一轮同步终点 |
+| [`fcfe41d`](https://github.com/McKean/aiquokka/commit/fcfe41d) | 从 tag 发布二进制 | 跳过；fork 已有 GoReleaser + 独立托盘包，且默认 CLI 保持 `CGO_ENABLED=0` |
+| [`b5af0ac`](https://github.com/McKean/aiquokka/commit/b5af0ac) | gofmt 与 depot 门禁 | 跳过 `.yardr`（本仓库不用）；`cmd/watch.go` 仍有两处对齐差异，未单独成类 |
+| [`286f464`](https://github.com/McKean/aiquokka/commit/286f464) | 一键安装脚本 | `f0b2a47`；改为拉取 iugamlabs 产物 `aiquokka-{linux,macos}-$arch` 与 `SHA256SUMS`，Homebrew / Scoop 仍是主安装入口 |
+| [`ebf5aaa`](https://github.com/McKean/aiquokka/commit/ebf5aaa) | `--version` 打印版本 | 跳过；fork 已有 `buildinfo`（version / commit / date） |
+| [`b107f5c`](https://github.com/McKean/aiquokka/commit/b107f5c) | Antigravity CloudCode + keyring | `8b19b97`；走 `credential.Apply` 与原子写回，保留 Weekly / 5h 标签 |
+| [`1b989cc`](https://github.com/McKean/aiquokka/commit/1b989cc) | Kiro 禁止浏览器登录回退 | `25d00b5`；保留官方 CLI 凭据归属 |
+| [`d722b24`](https://github.com/McKean/aiquokka/commit/d722b24) | Claude 活凭证与 Keychain 只读 | `49d6190`；Keychain 过期按 `readonly` 处理；本轮上游同步终点 |
 
 ## 后续同步步骤
 
@@ -97,7 +115,7 @@
    git status --short --branch
    git remote -v
    git fetch --no-tags upstream main
-   last_upstream=66ec5c129bdaba55d5ee2b14f1e8c2b54fe3c4cd
+   last_upstream=d722b24268a8f1ff9d779cd201f719897597b983
    git log --reverse --oneline "$last_upstream"..upstream/main
    git diff --stat "$last_upstream" upstream/main
    ```
@@ -146,6 +164,7 @@ go test -race -tags tray ./...
 go vet ./...
 go vet -tags tray ./...
 go build ./...
+sh install_test.sh
 ```
 
 完整测试需要允许 loopback HTTP 服务和假 CLI 子进程的环境；遇到沙箱权限错误应换到允许这些测试的环境复验，不应跳过测试并宣称通过。测试仅使用临时凭据、模拟 HTTP 和假 CLI，不验证真实账户或执行真实登录。
@@ -153,19 +172,22 @@ go build ./...
 本次已验证：
 
 - 默认 CLI 全量测试；托盘全量测试及 race 检查，涵盖内部 systray 包；凭据、Provider 并行查询、Muse 和命令层 race 检查。
+- Claude 过期文件优先活 Keychain、Keychain 只读不刷新不写回、刷新失败列出全部 endpoint。
+- Kiro `whoami` 拦截未登录、`KIRO_API_KEY` 跳过探测、Unix `Setsid` 拆掉 TTY、浏览器回退文案视为未配置。
+- Antigravity CloudCode 配额解析、OAuth 刷新写回文件／keyring、只读不写、二进制扫描缓存 client。
+- `install.sh` 九项本地 fixture 测试（无网络）：平台映射、Darwin→macos、校验失败不安装、目标为目录时拒绝。
 - Kimi 过期／401 只读不写、原子写入失败后原凭据不变、轮换令牌能力校验；Grok 两个请求同时被拒绝只刷新一次。
 - Codex 完整重置明细、JSON / YAML 新字段、空窗口、未知时间、target 边界、账户字段及退出码；保留 Cursor 权威用量和事实式余额。
 - 慢 Provider 与取消后的批量／JSON 输出、Kiro / Muse 进程清理、Muse 跨登录缓存隔离、无活动窗口和超时诊断。
 - 托盘剩余条／节奏、金额与重置事实、通知去重和重置误报、稳定 ID、关闭菜单通道、配置优先级与 Registry 别名。
-- Windows / macOS / Linux 的 amd64 / arm64 六个默认 CLI 构建（CGO=0），Linux amd64 / arm64 托盘构建。
-- 默认和托盘 `go vet`、模块一致性、工作流 YAML 与 actionlint、打包脚本语法、Linux 托盘压缩包的版本注入及许可证内容。
+- 默认和托盘 `go vet`。
 
-本次未在本机验证：macOS 原生托盘编译／运行、真实 macOS 或 Linux 桌面交互、桌面通知及真实 Provider 在线接口。macOS 原生测试与编译已配置到 CI，但此次没有推送，因此尚无远程 CI 运行结果。
+本次未在本机验证：macOS 原生托盘编译／运行、真实 macOS 或 Linux 桌面交互、桌面通知、真实 Provider 在线接口、六平台交叉编译。macOS 原生测试与编译已配置到 CI，但此次没有推送，因此尚无远程 CI 运行结果。
 
 CI 分别验证默认与 tray 构建，并检查默认依赖图不包含桌面实现。发布工作流只在 `v*` 标签触发：先构建四个托盘包，再由 GoReleaser 构建六个默认 CLI，最后上传托盘包和单独的 `TRAY_SHA256SUMS`；默认 CLI 继续使用 `SHA256SUMS`。所有任务来自同一标签提交。本次只修改配置，没有触发发布。
 
 ## 回退
 
-可逐类 `git revert <fork 分类提交>`；回退涉及后续依赖时按本次提交顺序反向处理，整轮回退还需包括最终文档提交。回退 Registry / 数据模型时同时回退依赖它们的 Muse、托盘及对应测试。回退后重新运行默认与托盘验证，并将同步记录标为已回退，避免把不再存在的功能继续计入已处理范围。
+可逐类 `git revert <fork 分类提交>`；回退涉及后续依赖时按本次提交顺序反向处理，整轮回退还需包括最终文档提交。本轮回退顺序为 install → Antigravity → Kiro → Claude。回退 Registry / 数据模型时同时回退依赖它们的 Muse、托盘及对应测试。回退后重新运行默认与托盘验证，并将同步记录标为已回退，避免把不再存在的功能继续计入已处理范围。
 
 仓库 remote 配置不属于 Git 提交，revert 不会恢复旧地址；本 fork 的正式身份仍是 iugamlabs。已存在的用户凭据和托盘设置不由代码回退自动删除。
